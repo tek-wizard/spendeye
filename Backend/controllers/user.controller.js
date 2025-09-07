@@ -6,6 +6,7 @@ import { jwtSetUser } from "../utils/jwt.js"
 //user register
 export const handleRegistorUser = async (req, res) => {
   try {
+
     //Checking if username is already taken
     const takenUsername = await User.findOne({ username: req.body.username })
 

@@ -15,5 +15,15 @@ export const registerSchema = z.object({
     .string()
     .min(6, { message: "Password must be at least 6 characters long" }),
 
-  contacts: z.array(contactSchema).optional().default([]),
+    contacts: z
+    .array(contactSchema)
+    .optional()
+    .default([])
+    .refine(
+      (contacts) => {
+        const names = contacts.map((c) => c.name.toLowerCase().trim());
+        return names.length === new Set(names).size;
+      },
+      { message: "Duplicate contact names are not allowed" }
+    ),
 });
