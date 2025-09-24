@@ -1,49 +1,35 @@
-// App.jsx
-import AuthLayout from "./layouts/AuthLayout";
-import LoginPage from "./pages/Login";
-import SignupPage from "./pages/Signup";
-import HomePage from "./pages/Home"; // <-- Import the new page
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { LocalizationProvider } from "@mui/x-date-pickers"
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
+import { Toaster } from "sonner"
+import { BrowserRouter, Routes, Route } from "react-router-dom"
+
+// Import Pages and Components
+import DashboardPage from "./pages/DashboardPage"
+import { AuthPage } from "./pages/AuthPage"
+import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 
 function App() {
   return (
-    <>
-      <Router>
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Toaster richColors position="top-right" />
+
+      <BrowserRouter>
         <Routes>
-          {/* Add the new Home route WITHOUT the AuthLayout */}
-          <Route path="/" element={<HomePage />} />
+          {/* Public Route for Login/Signup */}
 
-          {/* Auth pages wrapped in AuthLayout */}
-          <Route
-            path="/login"
-            element={
-              <AuthLayout>
-                <LoginPage />
-              </AuthLayout>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <AuthLayout>
-                <SignupPage />
-              </AuthLayout>
-            }
-          />
+          <Route path="/auth" element={<AuthPage />} />
 
-          {/* Optional: redirect to login if route not found */}
-          <Route
-            path="*"
-            element={
-              <AuthLayout>
-                <LoginPage />
-              </AuthLayout>
-            }
-          />
+          {/* Protected Routes */}
+
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<DashboardPage />} />
+
+            {/* You can add more protected routes here later, e.g., /settings */}
+          </Route>
         </Routes>
-      </Router>
-    </>
-  );
+      </BrowserRouter>
+    </LocalizationProvider>
+  )
 }
 
-export default App;
+export default App

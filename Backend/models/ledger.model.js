@@ -18,7 +18,9 @@ const LedgerSchema=mongoose.Schema({
         type:String,
         enum:[
             "Lent",
-            "Borrowed"
+            "Borrowed",
+            "Got Back",
+            "Paid Back"
         ],
         required:true
     },
@@ -28,8 +30,12 @@ const LedgerSchema=mongoose.Schema({
     date:{
         type: Date,
         required: true
+    },
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      index: true,
     }
-})
+  },{ timestamps: true })
 
 const Ledger=mongoose.model("Ledger",LedgerSchema)
 

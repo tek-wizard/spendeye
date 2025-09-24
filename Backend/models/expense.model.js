@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from "mongoose"
 
 const ExpenseSchema = mongoose.Schema(
   {
@@ -13,14 +13,22 @@ const ExpenseSchema = mongoose.Schema(
     },
     personalShare: {
       type: Number,
-      default:0
+      default: 0,
     },
     category: {
       type: String,
       enum: [
-        "Housing", "Utilities", "Food", "Transportation", "Health",
-        "Education", "Entertainment", "Shopping", "Debt Repayment",
-        "Loan Given", "Miscellaneous"
+        "Housing",
+        "Utilities",
+        "Food",
+        "Transportation",
+        "Health",
+        "Education",
+        "Entertainment",
+        "Shopping",
+        "Debt Repayment",
+        "Loan Given",
+        "Miscellaneous",
       ],
       required: true,
     },
@@ -49,17 +57,21 @@ const ExpenseSchema = mongoose.Schema(
         },
         ledgerId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: 'Ledger',
-        }
-      }
-    ]
+          ref: "Ledger",
+        },
+      },
+    ],
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      index: true,
+    },
   },
   { timestamps: true }
-);
+)
 
-const Expense = mongoose.model("Expense", ExpenseSchema);
+const Expense = mongoose.model("Expense", ExpenseSchema)
 
-export default Expense;
+export default Expense
 
 // Housing → Rent, Mortgage, Property tax, Repairs
 // Food→ Groceries, Dining out, Coffee/Tea, Snacks
@@ -69,5 +81,5 @@ export default Expense;
 // Entertainment & Leisure → Movies, Games, Hobbies, Vacations, Streaming services (Netflix, Spotify),Mobile Recharge
 // Shopping → Clothes, Electronics, Furniture
 // Debt Repayment → settling debts
+// Loan Given → amount given to contacts
 // Miscellaneous → Gifts, Donations, Pet care
-
