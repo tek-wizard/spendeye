@@ -2,7 +2,6 @@
 import React from 'react';
 import { Paper, BottomNavigation, BottomNavigationAction, useTheme } from '@mui/material';
 
-// Import all necessary icons
 import HomeIcon from '@mui/icons-material/Home';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
@@ -24,9 +23,9 @@ export const BottomNavBar = ({ activeTab, onTabChange }) => {
 
   const handleTabChangeWithHaptics = (event, newValue) => {
     if (navigator.vibrate) {
-      navigator.vibrate(5); // Subtle vibration on tap
+      navigator.vibrate(5);
     }
-    onTabChange(newValue); // Update the state in the parent component
+    onTabChange(newValue); // Calls the navigation function from MainLayout
   };
 
   return (
@@ -38,11 +37,12 @@ export const BottomNavBar = ({ activeTab, onTabChange }) => {
         backdropFilter: 'blur(10px)',
         borderTop: '1px solid',
         borderColor: theme.palette.divider,
+        zIndex:10
       }}
       elevation={3}
     >
       <BottomNavigation
-        value={activeTab}
+        value={activeTab} // Fully controlled by the prop from MainLayout
         onChange={handleTabChangeWithHaptics}
         sx={{ backgroundColor: 'transparent', height: 64 }}
       >
@@ -68,4 +68,4 @@ export const BottomNavBar = ({ activeTab, onTabChange }) => {
   );
 };
 
-export default BottomNavBar
+export default BottomNavBar;

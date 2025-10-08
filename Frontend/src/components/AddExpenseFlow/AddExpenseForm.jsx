@@ -144,15 +144,6 @@ export const AddExpenseForm = ({ expenseToEdit, onClose }) => {
   }, [isSuccess, isUpdateSuccess, handleCancel])
 
   const CurrentStepComponent = steps[activeStep]
-// --- DEBUGGING LOG ---
-console.log("--- DEBUGGING AddExpenseForm Render ---");
-console.log("Active Step Index:", activeStep);
-console.log("Is ContactsStep a valid component?", ContactsStep);
-console.log("Is SplitStep a valid component?", SplitStep);
-console.log("Is ConfirmStep a valid component?", ConfirmStep);
-console.log("The calculated steps array:", steps);
-console.log("The component it is trying to render:", steps[activeStep]);
-// --- END DEBUGGING LOG ---
 
 return (
   <>

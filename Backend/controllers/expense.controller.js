@@ -296,3 +296,109 @@ export const handleDeleteExpense = async (req, res) => {
     })
   }
 }
+
+export const getAnalyzedExpenses = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user._id);
+
+    // --- Destructure all possible query parameters ---
+    const {
+      startDate = "1970-01-01T00:00:00Z",
+      endDate = new Date().toISOString(),
+      search = "",
+      categories = "",
+      minAmount = "0",
+      maxAmount = "100000000",
+      isSplit,
+      page = "1",
+      limit = "25",
+    } = req.query;
+
+    // --- Build the initial $match stage for the aggregation pipeline ---
+    const matchStage = {
+      userId,
+      date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+      totalAmount: { $gte: parseFloat(minAmount), $lte: parseFloat(maxAmount) },
+    };
+
+    if (search) {
+      matchStage.notes = { $regex: search, $options: "i" }; // Case-insensitive search
+    }
+    if (categories) {
+      matchStage.category = { $in: categories.split(',') }; // Handle multiple categories
+    }
+    if (isSplit !== undefined) {
+      matchStage.isSplit = isSplit === 'true'; // Handle boolean filter
+    }
+
+    // --- Calculate pagination variables ---
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    // --- Main Aggregation Pipeline using $facet ---
+    const aggregationPipeline = [
+      { $match: matchStage },
+      {
+        $facet: {
+          // Pipeline 1: Get metadata and metrics
+          metadata: [
+            {
+              $group: {
+                _id: null,
+                totalTransactions: { $sum: 1 },
+                totalSpent: { $sum: "$totalAmount" },
+              },
+            },
+          ],
+          // Pipeline 2: Get category breakdown for the bar chart
+          categoryBreakdown: [
+            { $group: { _id: "$category", total: { $sum: "$totalAmount" } } },
+            { $project: { category: "$_id", total: 1, _id: 0 } },
+            { $sort: { total: -1 } },
+          ],
+          // Pipeline 3: Get the paginated transaction data
+          transactions: [
+            { $sort: { date: -1 } },
+            { $skip: skip },
+            { $limit: limitNum },
+          ],
+        },
+      },
+    ];
+
+    const [results] = await Expense.aggregate(aggregationPipeline);
+
+    // --- Format the response ---
+    const metadata = results.metadata[0] || { totalTransactions: 0, totalSpent: 0 };
+    const totalPages = Math.ceil(metadata.totalTransactions / limitNum);
+
+    const dateDiffInDays = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24);
+    const averageDailySpend = metadata.totalSpent / (dateDiffInDays || 1);
+    
+    res.status(200).json({
+      success: true,
+      message: "Analyzed expenses fetched successfully",
+      data: {
+        transactions: results.transactions || [],
+        pagination: {
+          currentPage: pageNum,
+          totalPages: totalPages,
+          totalTransactions: metadata.totalTransactions,
+        },
+        metrics: {
+          totalSpent: metadata.totalSpent,
+          averageDailySpend: parseFloat(averageDailySpend.toFixed(2)),
+        },
+        categoryBreakdown: results.categoryBreakdown || [],
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching analyzed expenses:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while analyzing expenses.",
+      error: error.message,
+    });
+  }
+};

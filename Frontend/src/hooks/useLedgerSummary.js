@@ -9,7 +9,6 @@ export const useLedgerSummary = () => {
     select: (data) => {
       const owedToYou = data.find(s => s._id === 'Lent') || { totalAmount: 0, count: 0 };
       const youOwe = data.find(s => s._id === 'Borrowed') || { totalAmount: 0, count: 0 };
-      console.log(owedToYou,youOwe)
       return {
         owedToYou: owedToYou.totalAmount,
         youOwe: youOwe.totalAmount,

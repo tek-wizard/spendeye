@@ -50,3 +50,24 @@ export const fetchSubTransactionsAPI = async (ids) => {
   const { data } = await api.post('/expense/subtransactions', { ids });
   return data.subTransactions;
 };
+
+export const fetchAnalyzedExpensesAPI = async (filters) => {
+  const params = new URLSearchParams();
+
+  // Append filters to the params object only if they have a value
+  if (filters.startDate) params.append('startDate', filters.startDate.toISOString());
+  if (filters.endDate) params.append('endDate', filters.endDate.toISOString());
+  if (filters.search) params.append('search', filters.search);
+  if (filters.categories && filters.categories.length > 0) {
+    params.append('categories', filters.categories.join(','));
+  }
+  if (filters.minAmount) params.append('minAmount', filters.minAmount);
+  if (filters.maxAmount) params.append('maxAmount', filters.maxAmount);
+  // Check for null because isSplit can be 'false'
+  if (filters.isSplit !== null && filters.isSplit !== undefined) params.append('isSplit', filters.isSplit);
+  if (filters.page) params.append('page', filters.page);
+  if (filters.limit) params.append('limit', filters.limit);
+
+  const { data } = await api.get(`/expense/analyze?${params.toString()}`);
+  return data.data; // The backend wraps the payload, so we unwrap it here
+};

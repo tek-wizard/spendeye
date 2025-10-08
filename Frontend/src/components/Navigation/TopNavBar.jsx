@@ -1,13 +1,17 @@
+// src/components/Navigation/TopNavBar.jsx
 import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Button, Avatar, Box, useTheme, IconButton, Tooltip } from '@mui/material';
 import { motion } from 'framer-motion';
 
-const navLinks = ['Home', 'Expenses', 'Ledger', 'Insights'];
+const navItems = [
+  { label: 'Home', path: '/', id: 'home' },
+  { label: 'Expenses', path: '/expenses', id: 'expenses' },
+  { label: 'Ledger', path: '/ledger', id: 'ledger' },
+  { label: 'Insights', path: '/insights', id: 'insights' },
+];
 
-// The component now receives onAvatarClick as a prop
-export const TopNavBar = ({ onAvatarClick }) => {
+export const TopNavBar = ({ activeTab, onNavigate, onAvatarClick }) => {
   const theme = useTheme();
-  const [activePage, setActivePage] = useState('Home');
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -29,17 +33,16 @@ export const TopNavBar = ({ onAvatarClick }) => {
       <Toolbar className="max-w-7xl mx-auto w-full">
         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Spendy</Typography>
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-          {navLinks.map((page) => (
-            <Button key={page} onClick={() => setActivePage(page)} sx={{ color: 'text.primary', position: 'relative', py: 2, height: '100%' }}>
-              {page}
-              {activePage === page && (
+          {navItems.map((item) => (
+            <Button key={item.id} onClick={() => onNavigate(item.path)} sx={{ color: 'text.primary', position: 'relative', py: 2, height: '100%' }}>
+              {item.label}
+              {activeTab === item.id && (
                 <motion.div layoutId="active-underline" style={{ position: 'absolute', bottom: 0, left: '16px', right: '16px', height: '3px', background: theme.palette.primary.main, borderRadius: '2px' }}/>
               )}
             </Button>
           ))}
         </Box>
         <Tooltip title="Account Settings">
-          {/* The onClick now uses the function passed down from the parent */}
           <IconButton onClick={onAvatarClick} sx={{ p: 0 }}>
             <Avatar alt="User" />
           </IconButton>
