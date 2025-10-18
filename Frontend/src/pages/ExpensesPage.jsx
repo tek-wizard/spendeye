@@ -14,6 +14,9 @@ import {
   Tooltip,
   IconButton,
   Badge,
+  Modal,
+  Slide,
+  Backdrop
 } from "@mui/material"
 import { startOfMonth, endOfMonth, differenceInDays } from "date-fns"
 import SearchIcon from "@mui/icons-material/Search"
@@ -28,6 +31,7 @@ import { FilterSidebar } from "../components/ExpensesPage/FilterSidebar"
 import { MetricCard } from "../components/ExpensesPage/MetricCard"
 import { useExpenses } from "../hooks/useExpenses"
 import { useDebounce } from "../hooks/useDebounce"
+import { FilterPanel } from "../components/ExpensesPage/FilterPanel"
 
 const defaultFilters = {
   selectedCategories: [],
@@ -128,8 +132,6 @@ const ExpensesPage = () => {
     (filters.isSplitFilter !== null ? 1 : 0) +
     (filters.amountRange[0] > 0 || filters.amountRange[1] < 50000 ? 1 : 0)
 
-  // This is the complete `return` statement for your ExpensesPage component.
-  // All of your existing state, data fetching, and handler logic remains the same.
 
   return (
     <Box>
@@ -327,78 +329,48 @@ const ExpensesPage = () => {
       )}
 
       {/* Filter Panel: Renders the correct component based on screen size */}
-      {isMobile ? (
-        <FilterSheet
-          isOpen={isFilterPanelOpen}
-          onClose={() => setFilterPanelOpen(false)}
-          dateRange={dateRange}
-          setDateRange={(newRange) => {
-            setDateRange(newRange)
-            setPage(1)
-          }}
-          filters={filters}
-          onCategoryChange={(newCats) =>
-            handleFilterChange({ selectedCategories: newCats })
-          }
-          onAmountChange={(newRange) =>
-            handleFilterChange({ amountRange: newRange })
-          }
-          onSplitChange={(newSplit) =>
-            handleFilterChange({ isSplitFilter: newSplit })
-          }
-          onApply={handleApplyFilters}
-          onReset={handleResetFilters}
-        />
-      ) : (
-        <Drawer
-          anchor="right"
-          open={isFilterPanelOpen}
-          onClose={() => setFilterPanelOpen(false)}
-          PaperProps={{
-            sx: {
-              // THE FIX: Constrain the width of the drawer panel itself.
-              width: 420,
-              background: "transparent",
-              boxShadow: "none",
-            },
-          }}
-          BackdropProps={{
-            sx: {
-              backdropFilter: "blur(4px)",
-              backgroundColor: "rgba(0,0,0,0.5)",
-            },
-          }}
-        >
-          <Box
-            sx={{
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <FilterSidebar
-              dateRange={dateRange}
-              setDateRange={(newRange) => {
-                setDateRange(newRange)
-                setPage(1)
-              }}
-              filters={filters}
-              onCategoryChange={(newCats) =>
-                handleFilterChange({ selectedCategories: newCats })
-              }
-              onAmountChange={(newRange) =>
-                handleFilterChange({ amountRange: newRange })
-              }
-              onSplitChange={(newSplit) =>
-                handleFilterChange({ isSplitFilter: newSplit })
-              }
-              onApply={handleApplyFilters}
-              onReset={handleResetFilters}
-            />
-          </Box>
-        </Drawer>
-      )}
+      <Modal
+                open={isFilterPanelOpen}
+                onClose={() => setFilterPanelOpen(false)}
+                closeAfterTransition
+                slots={{ backdrop: Backdrop }}
+                slotProps={{
+                    backdrop: {
+                        timeout: 500,
+                        sx: {
+                            backdropFilter: 'blur(10px)',
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                        }
+                    },
+                }}
+            >
+                <Slide direction={isMobile ? "up" : "left"} in={isFilterPanelOpen}>
+                    {/* This Box is the positioning container for our floating panel */}
+                    <Box sx={{
+                        position: 'absolute',
+                        outline: 0, // Remove focus outline from the modal
+                        // --- Responsive Positioning ---
+                        ...(isMobile 
+                            // On mobile, it floats at the bottom with margins
+                            ? { bottom: 16, left: 16, right: 16 } 
+                            // On desktop, it's vertically centered on the right with a margin
+                            : { top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', p: 4 }
+                        )
+                    }}>
+                        <FilterSidebar 
+                            dateRange={dateRange} 
+                            setDateRange={(newRange) => { setDateRange(newRange); setPage(1); }}
+                            filters={filters} 
+                            onCategoryChange={(newCats) => handleFilterChange({ selectedCategories: newCats })} 
+                            onAmountChange={(newRange) => handleFilterChange({ amountRange: newRange })} 
+                            onSplitChange={(newSplit) => handleFilterChange({ isSplitFilter: newSplit })} 
+                            onApply={handleApplyFilters} 
+                            onReset={handleResetFilters} 
+                        />
+                    </Box>
+                </Slide>
+            </Modal>
+      
     </Box>
   )
 }

@@ -15,17 +15,17 @@ export const fetchDashboardSummaryAPI = async ({ startDate, endDate } = {}) => {
 };
 
 // This function fetches the raw list of expenses
-export const fetchExpensesAPI = async () => {
-  const now = new Date();
-  const startDate = startOfMonth(now);
-  const endDate = endOfMonth(now);
+export const fetchExpensesAPI = async (dateRange) => {
+  // Use the provided dateRange, or default to the current month if it's missing.
+  const startDate = dateRange?.startDate || startOfMonth(new Date());
+  const endDate = dateRange?.endDate || endOfMonth(new Date());
 
   const params = new URLSearchParams({
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
   });
+  
   const url = `/expense?${params.toString()}`;
-
   const { data } = await api.get(url);
   
   return data;

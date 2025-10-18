@@ -1,6 +1,5 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
-  Paper,
   Box,
   Typography,
   Stack,
@@ -20,23 +19,61 @@ import {
   DialogContent,
   DialogActions,
   useTheme,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Paper,
+  Chip,
+  TextField,
+  InputAdornment,
+  Tooltip,
 } from "@mui/material"
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline"
 import { useCategoryMaps } from "../../utils/categoryMaps"
-import { DateRangePicker } from "react-date-range"
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown"
 import EventIcon from "@mui/icons-material/Event"
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday"
 import DateRangeIcon from "@mui/icons-material/DateRange"
 import AllInclusiveIcon from "@mui/icons-material/AllInclusive"
-import {
-  startOfMonth,
-  endOfMonth,
-  subMonths,
-  startOfYear,
-  endOfYear,
-  format,
-} from "date-fns"
+import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, format, isSameDay } from "date-fns";
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { toast } from "sonner"
 
+import { DatePickerMenu } from "./DatePickerMenu"
+
+// --- HELPERS ---
+const getCustomPresets = () => {
+  try {
+    const presets = localStorage.getItem("spendy_amount_presets")
+    return presets ? JSON.parse(presets) : []
+  } catch (e) {
+    return []
+  }
+}
+const formatNumber = (num) =>
+  num >= 1000 ? `${(num / 1000).toFixed(1)}k` : num
+const generateAmountLabel = (min, max) => {
+  if (min === 0 && max >= 50000) return "All"
+  if (min === 0) return `Under ₹${formatNumber(max)}`
+  if (max >= 50000) return `Over ₹${formatNumber(min)}`
+  return `₹${formatNumber(min)} - ₹${formatNumber(max)}`
+}
+
+// --- VALIDATION SCHEMA for the custom amount modal ---
+const amountPresetSchema = z
+  .object({
+    min: z.number().min(0, "Cannot be negative"),
+    max: z.number().positive("Must be greater than 0"),
+  })
+  .refine((data) => data.max > data.min, {
+    message: "Max amount must be greater than Min",
+    path: ["max"], // Assign error to the 'max' field
+  })
+
+// --- MAIN COMPONENT ---
 export const FilterSidebar = React.memo(
   ({
     filters,
@@ -52,36 +89,98 @@ export const FilterSidebar = React.memo(
     const { categoryColors } = useCategoryMaps()
     const allCategories = Object.keys(categoryColors)
 
-    // --- STATE FOR DATE PICKER MENU/MODAL ---
-    const [anchorEl, setAnchorEl] = useState(null)
-    const [isCustomModalOpen, setCustomModalOpen] = useState(false)
-    const [customRange, setCustomRange] = useState([
-      {
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
-        key: "selection",
-      },
-    ])
+    const [expandedPanel, setExpandedPanel] = useState(false)
+    const handleAccordionChange = (panel) => (event, isExpanded) => {
+      setExpandedPanel(isExpanded ? panel : false)
+    }
 
-    // --- DATE PICKER HANDLERS ---
-    const handleDateMenuClick = (event) => setAnchorEl(event.currentTarget)
-    const handleDateMenuClose = () => setAnchorEl(null)
-    const handleDatePresetSelect = (label, startDate, endDate) => {
-      setDateRange({ label, startDate, endDate })
-      handleDateMenuClose()
+    // ---  THE NEW MUI DATE PICKER ---
+    const [dateAnchorEl, setDateAnchorEl] = useState(null);
+    const handleDateMenuClick = (event) => setDateAnchorEl(event.currentTarget);
+    const handleDateMenuClose = () => setDateAnchorEl(null);
+
+  // const handleDateApply = () => {
+  //     const [start, end] = tempDateRange;
+  //     if (!start || !end) return; // Prevent applying an incomplete range
+
+  //     const isCustom = !datePresets.some(p => isSameDay(p.startDate, start) && isSameDay(p.endDate, end));
+  //     const label = isCustom 
+  //         ? `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`
+  //         : datePresets.find(p => isSameDay(p.startDate, start))?.label || 'Custom';
+      
+  //     setDateRange({ label, startDate: start, endDate: end });
+  //     handleDateMenuClose();
+  // };
+
+
+    // --- STATE & LOGIC FOR CUSTOM AMOUNT PRESETS ---
+    const [isAmountModalOpen, setAmountModalOpen] = useState(false)
+    const [customPresets, setCustomPresets] = useState(getCustomPresets)
+    const {
+      register,
+      handleSubmit,
+      formState: { errors },
+      setValue,
+      watch,
+      reset: resetAmountForm,
+    } = useForm({
+      resolver: zodResolver(amountPresetSchema),
+      defaultValues: { min: 0, max: 10000 },
+    })
+    const newPresetWatchedRange = watch()
+
+    useEffect(() => {
+      localStorage.setItem(
+        "spendy_amount_presets",
+        JSON.stringify(customPresets)
+      )
+    }, [customPresets])
+
+    const onSaveCustomPreset = (data) => {
+      const { min, max } = data
+      const newLabel = generateAmountLabel(min, max)
+      const newPreset = { label: newLabel, range: [min, max] }
+
+      const allCurrentPresets = [...defaultPresets, ...customPresets]
+      const isDuplicate = allCurrentPresets.some(
+        (p) => p.label === newPreset.label
+      )
+      if (isDuplicate) {
+        toast.error("This preset already exists.")
+        return
+      }
+
+      setCustomPresets((prev) => [...prev, newPreset])
+      onAmountChange(newPreset.range)
+      setAmountModalOpen(false)
     }
-    const handleCustomDateApply = () => {
-      const { startDate, endDate } = customRange[0]
-      const formattedLabel =
-        format(startDate, "MMM d, yyyy") === format(endDate, "MMM d, yyyy")
-          ? format(startDate, "MMM d, yyyy")
-          : `${format(startDate, "MMM d")} - ${format(endDate, "MMM d, yyyy")}`
-      setDateRange({ label: formattedLabel, startDate, endDate })
-      setCustomModalOpen(false)
-      handleDateMenuClose()
+
+    const handleDeleteCustomPreset = (presetToDelete) => {
+      setCustomPresets((prev) =>
+        prev.filter((p) => p.label !== presetToDelete.label)
+      )
     }
+
+    // --- OTHER FILTER HANDLERS ---
+    const handleCategoryToggle = (category) => {
+      const currentIndex = filters.selectedCategories.indexOf(category)
+      const newCategories = [...filters.selectedCategories]
+      if (currentIndex === -1) {
+        newCategories.push(category)
+      } else {
+        newCategories.splice(currentIndex, 1)
+      }
+      onCategoryChange(newCategories)
+    }
+    const handleSplitChange = (event, newValue) => {
+      if (newValue === "personal") onSplitChange(false)
+      else if (newValue === "split") onSplitChange(true)
+      else onSplitChange(null)
+    }
+
+    // --- Data for Rendering ---
     const now = new Date()
-    const presets = [
+    const datePresets = [
       {
         label: "This Month",
         startDate: startOfMonth(now),
@@ -141,151 +240,274 @@ export const FilterSidebar = React.memo(
       },
       ".rdrNextButton i": { borderColor: { left: theme.palette.text.primary } },
     }
-
-    // --- OTHER HANDLERS ---
-    const handleCategoryToggle = (category) => {
-      const currentIndex = filters.selectedCategories.indexOf(category)
-      const newCategories = [...filters.selectedCategories]
-      if (currentIndex === -1) {
-        newCategories.push(category)
-      } else {
-        newCategories.splice(currentIndex, 1)
-      }
-      onCategoryChange(newCategories)
-    }
-    const handleSplitChange = (event, newValue) => {
-      if (newValue === "personal") onSplitChange(false)
-      else if (newValue === "split") onSplitChange(true)
-      else onSplitChange(null)
-    }
+    const defaultPresets = [
+      { label: "All", range: [0, 50000] },
+      { label: "Under ₹1k", range: [0, 1000] },
+      { label: "₹1k - ₹5k", range: [1000, 5000] },
+      { label: "Over ₹5k", range: [5000, 50000] },
+    ]
+    const allPresets = [...defaultPresets, ...customPresets]
     const splitValue =
       filters.isSplitFilter === true
         ? "split"
         : filters.isSplitFilter === false
         ? "personal"
         : "all"
+    const dateValue = dateRange.label
+    const categoryValue =
+      filters.selectedCategories.length > 0
+        ? `${filters.selectedCategories.length} selected`
+        : "All"
+    const amountValue =
+      filters.amountRange[0] > 0 || filters.amountRange[1] < 50000
+        ? `₹${formatNumber(filters.amountRange[0])} - ₹${formatNumber(
+            filters.amountRange[1]
+          )}`
+        : "All"
+    const typeValue =
+      filters.isSplitFilter === true
+        ? "Split"
+        : filters.isSplitFilter === false
+        ? "Personal"
+        : "All"
+    const numberInputSx = {
+      "& input[type=number]::-webkit-inner-spin-button, & input[type=number]::-webkit-outer-spin-button":
+        { WebkitAppearance: "none", margin: 0 },
+      "& input[type=number]": { MozAppearance: "textfield" },
+    }
 
     return (
       <>
         <Paper
           variant="outlined"
-          sx={{ p: 2.5, height: "100%", borderRadius: 2 }}
+          sx={{ width: 380, borderRadius: 4, overflow: "hidden" }}
         >
-          <Stack spacing={3} sx={{ height: "100%" }}>
+          <Stack
+            sx={{
+              p: 2.5,
+              height: "100%",
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Typography variant="h6" sx={{ fontWeight: "bold" }}>
               Filters
             </Typography>
-            <Divider />
-
-            <Box>
-              <Typography gutterBottom sx={{ fontWeight: "medium" }}>
-                Date Range
-              </Typography>
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={handleDateMenuClick}
-                endIcon={<ArrowDropDownIcon />}
-              >
-                {dateRange.label}
-              </Button>
-            </Box>
-
-            <Box>
-              <Typography gutterBottom sx={{ fontWeight: "medium" }}>
-                Type
-              </Typography>
-              <ToggleButtonGroup
-                value={splitValue}
-                exclusive
-                onChange={handleSplitChange}
-                fullWidth
-                size="small"
-              >
-                <ToggleButton value="all">All</ToggleButton>
-                <ToggleButton value="personal">Personal</ToggleButton>
-                <ToggleButton value="split">Split</ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-
-            <Box>
-              <Typography gutterBottom sx={{ fontWeight: "medium" }}>
-                Category
-              </Typography>
-              <FormGroup
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ flexGrow: 1, overflowY: "auto", pr: 1, mr: -1 }}>
+              <Accordion
+                expanded={expandedPanel === "date"}
+                onChange={handleAccordionChange("date")}
                 sx={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: 1,
-                  flexWrap: "wrap",
+                  bgcolor: "transparent",
+                  boxShadow: "none",
+                  "&:before": { display: "none" },
                 }}
               >
-                {allCategories.map((cat) => {
-                  const isSelected = filters.selectedCategories.includes(cat)
-                  return (
-                    <FormControlLabel
-                      key={cat}
-                      control={
-                        <Checkbox
-                          checked={isSelected}
-                          onChange={() => handleCategoryToggle(cat)}
-                          sx={{ display: "none" }}
-                        />
-                      }
-                      label={cat}
-                      sx={{
-                        m: 0.25, // spacing
-                        "& .MuiTypography-root": {
-                          fontSize: "0.8rem",
-                          border: 1,
-                          borderColor: "divider",
-                          borderRadius: 2,
-                          padding: "2px 8px",
-                          cursor: "pointer",
-                          bgcolor: isSelected ? "primary.main" : "transparent",
-                          color: isSelected
-                            ? "primary.contrastText"
-                            : "text.primary",
-                          "&:hover": {
-                            bgcolor: isSelected
-                              ? "primary.main"
-                              : "action.hover", // selected stays the same
-                            opacity: isSelected ? 0.9 : 1, // slight opacity for hover on selected
-                          },
-                        },
-                      }}
-                    />
-                  )
-                })}
-              </FormGroup>
-            </Box>
-
-            <Box>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography sx={{ fontWeight: "medium", flexShrink: 0 }}>
+                    Date Range
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color: "text.secondary",
+                      ml: "auto",
+                      mr: 1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {dateValue}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    onClick={handleDateMenuClick}
+                    endIcon={<ArrowDropDownIcon />}
+                  >
+                    {dateRange.label}
+                  </Button>
+                </AccordionDetails>
+              </Accordion>
+              <Accordion
+                expanded={expandedPanel === "category"}
+                onChange={handleAccordionChange("category")}
+                sx={{
+                  bgcolor: "transparent",
+                  boxShadow: "none",
+                  "&:before": { display: "none" },
+                }}
               >
-                <Typography sx={{ fontWeight: "medium" }}>
-                  Amount Range
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  ₹{filters.amountRange[0]} - ₹{filters.amountRange[1]}
-                </Typography>
-              </Stack>
-              <Slider
-                value={filters.amountRange}
-                onChange={(e, newValue) => onAmountChange(newValue)}
-                valueLabelDisplay="auto"
-                min={0}
-                max={50000}
-                step={500}
-              />
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography sx={{ fontWeight: "medium" }}>
+                    Category
+                  </Typography>
+                  <Typography
+                    sx={{ color: "text.secondary", ml: "auto", mr: 1 }}
+                  >
+                    {categoryValue}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <FormGroup
+                    sx={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: 1,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {allCategories.map((cat) => (
+                      <FormControlLabel
+                        key={cat}
+                        control={
+                          <Checkbox
+                            checked={filters.selectedCategories.includes(cat)}
+                            onChange={() => handleCategoryToggle(cat)}
+                            sx={{ display: "none" }}
+                          />
+                        }
+                        label={cat}
+                        sx={{
+                          m: 0,
+                          "& .MuiTypography-root": {
+                            border: 1,
+                            borderColor: "divider",
+                            borderRadius: 4,
+                            padding: "4px 12px",
+                            cursor: "pointer",
+                            "&:hover": { bgcolor: "action.hover" },
+                            ...(filters.selectedCategories.includes(cat) && {
+                              bgcolor: "primary.main",
+                              color: "primary.contrastText",
+                              borderColor: "primary.main",
+                            }),
+                          },
+                        }}
+                      />
+                    ))}
+                  </FormGroup>
+                </AccordionDetails>
+              </Accordion>
+              <Accordion
+                expanded={expandedPanel === "amount"}
+                onChange={handleAccordionChange("amount")}
+                sx={{
+                  bgcolor: "transparent",
+                  boxShadow: "none",
+                  "&:before": { display: "none" },
+                }}
+              >
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography sx={{ fontWeight: "medium" }}>Amount</Typography>
+                  <Typography
+                    sx={{ color: "text.secondary", ml: "auto", mr: 1 }}
+                  >
+                    {amountValue}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Box
+                    sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}
+                  >
+                    {allPresets.map((preset) => {
+                      const isCustom =
+                        defaultPresets.findIndex(
+                          (p) => p.label === preset.label
+                        ) === -1
+                      const isSelected =
+                        JSON.stringify(filters.amountRange) ===
+                        JSON.stringify(preset.range)
+                      return (
+                        <Chip
+                          key={preset.label}
+                          label={preset.label}
+                          onClick={() => onAmountChange(preset.range)}
+                          variant={isSelected ? "filled" : "outlined"}
+                          color="primary"
+                          onDelete={
+                            isCustom
+                              ? () => handleDeleteCustomPreset(preset)
+                              : undefined
+                          }
+                        />
+                      )
+                    })}
+                    <Tooltip
+                      title={
+                        customPresets.length >= 5
+                          ? "Maximum of 5 custom presets reached"
+                          : ""
+                      }
+                    >
+                      <span>
+                        <Chip
+                          label="Custom"
+                          icon={<AddCircleOutlineIcon />}
+                          onClick={() => {
+                            resetAmountForm({
+                              min: filters.amountRange[0],
+                              max: filters.amountRange[1],
+                            })
+                            setAmountModalOpen(true)
+                          }}
+                          variant="outlined"
+                          disabled={customPresets.length >= 5}
+                        />
+                      </span>
+                    </Tooltip>
+                  </Box>
+                  <Slider
+                    value={filters.amountRange}
+                    onChange={(e, newValue) => onAmountChange(newValue)}
+                    valueLabelDisplay="auto"
+                    min={0}
+                    max={50000}
+                    step={500}
+                    marks={[
+                      { value: 10000, label: "10k" },
+                      { value: 25000, label: "25k" },
+                    ]}
+                  />
+                </AccordionDetails>
+              </Accordion>
+              <Accordion
+                expanded={expandedPanel === "type"}
+                onChange={handleAccordionChange("type")}
+                sx={{
+                  bgcolor: "transparent",
+                  boxShadow: "none",
+                  "&:before": { display: "none" },
+                }}
+              >
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography sx={{ fontWeight: "medium" }}>Type</Typography>
+                  <Typography
+                    sx={{ color: "text.secondary", ml: "auto", mr: 1 }}
+                  >
+                    {typeValue}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <ToggleButtonGroup
+                    value={splitValue}
+                    exclusive
+                    onChange={handleSplitChange}
+                    fullWidth
+                    size="small"
+                  >
+                    <ToggleButton value="all">All</ToggleButton>
+                    <ToggleButton value="personal">Personal</ToggleButton>
+                    <ToggleButton value="split">Split</ToggleButton>
+                  </ToggleButtonGroup>
+                </AccordionDetails>
+              </Accordion>
             </Box>
-
-            <Box sx={{ flexGrow: 1 }} />
-
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} sx={{ pt: 2, mt: "auto" }}>
               <Button fullWidth variant="outlined" onClick={onReset}>
                 Reset
               </Button>
@@ -295,84 +517,88 @@ export const FilterSidebar = React.memo(
             </Stack>
           </Stack>
         </Paper>
-
-        {/* Pop-up Menu and Dialog for the Date Picker */}
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleDateMenuClose}
-          PaperProps={{
-            elevation: 0,
-            sx: {
-              overflow: "visible",
-              filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
-              mt: 1.5,
-              bgcolor: "background.paper",
-              "&::before": {
-                content: '""',
-                display: "block",
-                position: "absolute",
-                top: 0,
-                left: 14,
-                width: 10,
-                height: 10,
-                bgcolor: "background.paper",
-                transform: "translateY(-50%) rotate(45deg)",
-                zIndex: 0,
-              },
-            },
-          }}
-          transformOrigin={{ horizontal: "left", vertical: "top" }}
-          anchorOrigin={{ horizontal: "left", vertical: "bottom" }}
-        >
-          {presets.map((p) => (
-            <MenuItem
-              key={p.label}
-              onClick={() =>
-                handleDatePresetSelect(p.label, p.startDate, p.endDate)
-              }
-            >
-              <ListItemIcon>{p.icon}</ListItemIcon>
-              {p.label}
-            </MenuItem>
-          ))}
-          <Divider />
-          <MenuItem
-            onClick={() => {
-              handleDateMenuClose()
-              setCustomModalOpen(true)
-            }}
-          >
-            <ListItemIcon>
-              <DateRangeIcon fontSize="small" />
-            </ListItemIcon>
-            Custom Range
-          </MenuItem>
-        </Menu>
         <Dialog
-          open={isCustomModalOpen}
-          onClose={() => setCustomModalOpen(false)}
-          PaperProps={{ sx: datePickerTheme }}
+          open={isAmountModalOpen}
+          onClose={() => setAmountModalOpen(false)}
+          maxWidth="xs"
+          fullWidth
         >
-          <DialogTitle>Select Custom Date Range</DialogTitle>
-          <DialogContent sx={{ p: { xs: 0, sm: "0 24px" } }}>
-            <DateRangePicker
-              onChange={(item) => setCustomRange([item.selection])}
-              showSelectionPreview={true}
-              moveRangeOnFirstSelection={false}
-              months={2}
-              ranges={customRange}
-              direction="horizontal"
-              rangeColors={[theme.palette.primary.main]}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setCustomModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCustomDateApply} variant="contained">
-              Apply
-            </Button>
-          </DialogActions>
+          <DialogTitle sx={{ fontWeight: "bold" }}>
+            Create Custom Range
+          </DialogTitle>
+          <form onSubmit={handleSubmit(onSaveCustomPreset)}>
+            <DialogContent>
+              <Stack spacing={2.5} sx={{ pt: 1 }}>
+                <Paper variant="outlined" sx={{ p: 2, textAlign: "center" }}>
+                  <Typography variant="caption" color="text.secondary">
+                    PRESET PREVIEW
+                  </Typography>
+                  <Typography sx={{ fontWeight: "bold" }}>
+                    {generateAmountLabel(
+                      newPresetWatchedRange.min,
+                      newPresetWatchedRange.max
+                    )}
+                  </Typography>
+                </Paper>
+                <Slider
+                  value={[newPresetWatchedRange.min, newPresetWatchedRange.max]}
+                  onChange={(e, newValue) => {
+                    setValue("min", newValue[0])
+                    setValue("max", newValue[1])
+                  }}
+                  valueLabelDisplay="auto"
+                  min={0}
+                  max={50000}
+                  step={500}
+                />
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    label="Min Amount"
+                    type="number"
+                    {...register("min", { valueAsNumber: true })}
+                    error={!!errors.min}
+                    helperText={errors.min?.message}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">₹</InputAdornment>
+                      ),
+                    }}
+                    sx={numberInputSx}
+                  />
+                  <TextField
+                    label="Max Amount"
+                    type="number"
+                    {...register("max", { valueAsNumber: true })}
+                    error={!!errors.max}
+                    helperText={errors.max?.message}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">₹</InputAdornment>
+                      ),
+                    }}
+                    sx={numberInputSx}
+                  />
+                </Stack>
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ p: 2 }}>
+              <Button onClick={() => setAmountModalOpen(false)}>Cancel</Button>
+              <Button type="submit" variant="contained">
+                Save Preset
+              </Button>
+            </DialogActions>
+          </form>
         </Dialog>
+
+
+        {/* Date Picker */}
+        <DatePickerMenu 
+            anchorEl={dateAnchorEl}
+            onClose={handleDateMenuClose}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+        />
+
       </>
     )
   }

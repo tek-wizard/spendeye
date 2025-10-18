@@ -1,19 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchExpensesAPI } from '../api/expenseService';
 
-export const useExpenses = () => {
+// THE FIX: The hook now accepts the dateRange object as an argument.
+export const useExpenses = (dateRange) => {
   const { 
     data: rawExpenses, 
     isLoading, 
     error 
   } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: fetchExpensesAPI,
-    // This is crucial: it selects the 'expenses' array from the API response object.
-    // The backend returns { success: true, expenses: [...] }, this gives us just the array.
+    // THE FIX: The queryKey now includes the dateRange.
+    // When dateRange changes, React Query will automatically refetch the data.
+    queryKey: ['expenses', dateRange],
+    
+    // The queryFn now passes the dateRange to the API call.
+    queryFn: () => fetchExpensesAPI(dateRange),
+    
     select: (data) => data.expenses,
   });
 
-  // Return an empty array as a safe default while loading or on error
   return { rawExpenses: rawExpenses || [], isLoading, error };
 };
