@@ -22,33 +22,56 @@ import { ContactsStep } from "./steps/ContactsStep"
 import { SplitStep } from "./steps/SplitStep"
 import { ConfirmStep } from "./steps/ConfirmStep"
 import { LockedExpenseStep } from "./steps/LockedExpenseStep"
-import { AddContactModal } from "../auth/AddContactModal" // UPDATED: Import the modal here
+import { AddContactModal } from "../auth/AddContactModal"
 
 import { useCreateExpense } from "../../hooks/useCreateExpense"
 import { useUpdateExpense } from "../../hooks/useUpdateExpense"
+import { useContacts } from "../../hooks/useContacts" // ✅ Added to populate split details when editing
 
 export const AddExpenseForm = ({ expenseToEdit, onClose }) => {
-  const { formData, updateFormData, clearFormData } =
-    useExpenseForm(expenseToEdit)
-  const {
-    createExpense,
-    isCreating,
-    isSuccess,
-    reset: resetCreateExpense,
-  } = useCreateExpense()
-  const {
-    updateExpense,
-    isUpdating,
-    isSuccess: isUpdateSuccess,
-  } = useUpdateExpense()
+  const { formData, updateFormData, clearFormData } = useExpenseForm(expenseToEdit)
+  const { createExpense, isCreating, isSuccess, reset: resetCreateExpense } = useCreateExpense()
+  const { updateExpense, isUpdating, isSuccess: isUpdateSuccess } = useUpdateExpense()
+  const { data: allContacts } = useContacts() // ✅ fetch all contacts
 
   const [activeStep, setActiveStep] = useState(0)
   const [direction, setDirection] = useState(1)
-  const [isAddContactModalOpen, setAddContactModalOpen] = useState(false) // UPDATED: State is now lifted here
+  const [isAddContactModalOpen, setAddContactModalOpen] = useState(false)
 
   const isEditMode = !!expenseToEdit
   const isLocked =
     isEditMode && ["Debt Repayment", "Loan Given"].includes(formData.category)
+
+  // ✅ Populate split + contacts correctly when editing a shared expense
+  useEffect(() => {
+    if (isEditMode && expenseToEdit && allContacts) {
+      if (!expenseToEdit.isSplit || !expenseToEdit.splitDetails) return
+
+      const existingContactNames = expenseToEdit.splitDetails.map((d) => d.person)
+      const contactsToPreselect = allContacts.filter((c) =>
+        existingContactNames.includes(c.name)
+      )
+
+      const initialSplits = [
+        { participantId: "user", amount: expenseToEdit.personalShare },
+      ]
+
+      contactsToPreselect.forEach((contact) => {
+        const detail = expenseToEdit.splitDetails.find((d) => d.person === contact.name)
+        if (detail) {
+          initialSplits.push({
+            participantId: contact._id,
+            amount: detail.amountOwed,
+          })
+        }
+      })
+
+      updateFormData({
+        contacts: contactsToPreselect,
+        splits: initialSplits,
+      })
+    }
+  }, [isEditMode, expenseToEdit, allContacts, updateFormData])
 
   const steps = useMemo(() => {
     if (isLocked) return [LockedExpenseStep]
@@ -115,11 +138,11 @@ export const AddExpenseForm = ({ expenseToEdit, onClose }) => {
         ? formData.contacts.map((contact) => ({
             person: contact.name,
             amountOwed:
-              formData.splits.find((s) => s.participantId === contact._id)
-                ?.amount || 0,
+              formData.splits.find((s) => s.participantId === contact._id)?.amount || 0,
           }))
         : [],
     }
+
     if (formData._id) {
       updateExpense({ expenseId: formData._id, expenseData })
     } else {
@@ -145,8 +168,8 @@ export const AddExpenseForm = ({ expenseToEdit, onClose }) => {
 
   const CurrentStepComponent = steps[activeStep]
 
-return (
-  <>
+  return (
+    <>
       <Card sx={{ display: "flex", flexDirection: "column" }}>
         <Box component="form" onSubmit={handleFormSubmit}>
           <Box
@@ -179,16 +202,17 @@ return (
               <ArrowForwardIosIcon />
             </IconButton>
           </Box>
+
           <CardContent sx={{ position: "relative", overflow: "hidden" }}>
-          <AnimatePresence initial={false} custom={direction} mode="wait">
-            <motion.div
-              key={activeStep}
-              custom={direction}
-              initial={{ x: direction > 0 ? "100%" : "-100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: direction > 0 ? "-100%" : "100%", opacity: 0 }}
-              transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
-            >
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={activeStep}
+                custom={direction}
+                initial={{ x: direction > 0 ? "100%" : "-100%", opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: direction > 0 ? "-100%" : "100%", opacity: 0 }}
+                transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
+              >
                 <Box
                   sx={{
                     display: "flex",
@@ -207,13 +231,14 @@ return (
                       isCreating={isCreating || isUpdating}
                       onEnterPress={handleEnterPress}
                       isEditMode={isEditMode}
-                      onAddNewContact={() => setAddContactModalOpen(true)} // UPDATED: Pass the handler down
+                      onAddNewContact={() => setAddContactModalOpen(true)}
                     />
                   )}
                 </Box>
               </motion.div>
             </AnimatePresence>
           </CardContent>
+
           <MobileStepper
             variant="dots"
             steps={steps.length}
@@ -224,7 +249,6 @@ return (
         </Box>
       </Card>
 
-      {/* UPDATED: The Modal is now a sibling to the Card */}
       <AddContactModal
         open={isAddContactModalOpen}
         onClose={() => setAddContactModalOpen(false)}

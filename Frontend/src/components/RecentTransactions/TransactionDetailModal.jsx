@@ -20,54 +20,51 @@ import { format } from "date-fns"
 import CloseIcon from "@mui/icons-material/Close"
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined"
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined"
-import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee"
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined"
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined"
+import NotesOutlinedIcon from "@mui/icons-material/NotesOutlined"
 
-import { useCategoryMaps } from "../../utils/categoryMaps";
-
-const SubTransactionRow = ({ transaction, icon, color }) => (
-  <Stack direction="row" alignItems="center" spacing={2} sx={{ py: 1.5 }}>
-    <Avatar sx={{ bgcolor: color, width: 32, height: 32 }}>{icon}</Avatar>
-    <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="body1" sx={{ fontWeight: 'medium' }}>{transaction.category}</Typography>
-    </Box>
-    <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-      {(transaction.totalAmount || 0).toLocaleString("en-IN", { style: "currency", currency: "INR" })}
-    </Typography>
-  </Stack>
-);
-
-
-// Reusable Detail Row for consistency
-
-const DetailRow = ({ icon, label, value }) => (
-  <Stack direction="row" alignItems="center" spacing={2} sx={{ py: 1 }}>
+// ✅ Improved, flexible DetailRow that supports long notes
+const DetailRow = ({ icon, label, value, isNote = false }) => (
+  <Stack direction="row" alignItems="flex-start" spacing={2} sx={{ py: 1.5 }}>
     {icon}
-    <Box>
+    <Box sx={{ minWidth: 0 }}>
       <Typography variant="caption" color="text.secondary">
         {label}
       </Typography>
-      <Typography variant="body1" sx={{ fontWeight: "medium" }}>
+      <Typography
+        variant="body1"
+        sx={{
+          fontWeight: "medium",
+          whiteSpace: isNote ? "pre-wrap" : "normal",
+          wordBreak: isNote ? "break-word" : "normal",
+        }}
+      >
         {value}
       </Typography>
     </Box>
   </Stack>
 )
-export const TransactionDetailModal = ({ transaction, open, onClose, onEdit, onDelete, isLocked }) => {
+
+export const TransactionDetailModal = ({
+  transaction,
+  open,
+  onClose,
+  onEdit,
+  onDelete,
+  isLocked,
+}) => {
   const theme = useTheme()
 
-  // Create the participants list for the "Split Between" view
+  // ✅ Build participants array for split expenses
   const participants = useMemo(() => {
     if (!transaction || !transaction.isSplit) return []
 
-    // Add "You" to the list with your personal share
     const you = {
       name: "You",
       amount: transaction.personalShare || 0,
     }
 
-    // Format the others from splitDetails
     const others = (transaction.splitDetails || []).map((detail) => ({
       name: detail.person,
       amount: detail.amountOwed,
@@ -78,7 +75,8 @@ export const TransactionDetailModal = ({ transaction, open, onClose, onEdit, onD
 
   if (!transaction) return null
 
-  const iconColor = theme.palette.accent.main // Use the vibrant accent color for icons
+  const iconColor = theme.palette.accent.main
+  const noteText = transaction.notes || transaction.description
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
@@ -96,6 +94,7 @@ export const TransactionDetailModal = ({ transaction, open, onClose, onEdit, onD
           <CloseIcon />
         </IconButton>
       </DialogTitle>
+
       <DialogContent sx={{ textAlign: "center", p: 3, pt: 0 }}>
         <Avatar
           sx={{
@@ -109,34 +108,39 @@ export const TransactionDetailModal = ({ transaction, open, onClose, onEdit, onD
         >
           {transaction.icon}
         </Avatar>
+
         <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-          {(transaction.amount || 0).toLocaleString("en-IN", {
-            style: "currency",
-            currency: "INR",
-          })}
-        </Typography>
-        <Typography color="text.secondary">
-          {transaction.description}
+          {(transaction.totalAmount || transaction.amount || 0).toLocaleString(
+            "en-IN",
+            { style: "currency", currency: "INR" }
+          )}
         </Typography>
 
         <Stack divider={<Divider />} sx={{ mt: 3, textAlign: "left" }}>
           <DetailRow
-            icon={<LocalOfferOutlinedIcon sx={{ color: iconColor }} />}
+            icon={<LocalOfferOutlinedIcon sx={{ color: iconColor, mt: "4px" }} />}
             label="Category"
-            value={transaction.type}
+            value={transaction.type || transaction.category}
           />
           <DetailRow
-            icon={<CalendarTodayOutlinedIcon sx={{ color: iconColor }} />}
+            icon={<CalendarTodayOutlinedIcon sx={{ color: iconColor, mt: "4px" }} />}
             label="Date & Time"
-            value={format(
-              new Date(transaction.date),
-              "MMMM do, yyyy 'at' h:mm a"
-            )}
+            value={format(new Date(transaction.date), "MMMM do, yyyy 'at' h:mm a")}
           />
+
+          {/* ✅ Properly wrapped Notes row */}
+          {noteText && (
+            <DetailRow
+              icon={<NotesOutlinedIcon sx={{ color: iconColor, mt: "4px" }} />}
+              label="Notes"
+              value={noteText}
+              isNote={true}
+            />
+          )}
 
           {transaction.isSplit && (
             <DetailRow
-              icon={<AccountCircleOutlinedIcon sx={{ color: iconColor }} />}
+              icon={<AccountCircleOutlinedIcon sx={{ color: iconColor, mt: "4px" }} />}
               label="Your Personal Share"
               value={(transaction.personalShare || 0).toLocaleString("en-IN", {
                 style: "currency",
@@ -209,15 +213,21 @@ export const TransactionDetailModal = ({ transaction, open, onClose, onEdit, onD
           )}
         </Stack>
       </DialogContent>
+
       <DialogActions sx={{ p: 2, justifyContent: "space-between" }}>
-      <Tooltip title={isLocked ? "This expense is linked to a ledger entry and cannot be deleted here." : ""}>
-    {/* The span is necessary for the tooltip to work on a disabled button */}
-    <span>
-    <Button color="error" onClick={onDelete} disabled={isLocked}>
-        Delete
-    </Button>
-    </span>
-</Tooltip>
+        <Tooltip
+          title={
+            isLocked
+              ? "This expense is linked to a ledger entry and cannot be deleted here."
+              : ""
+          }
+        >
+          <span>
+            <Button color="error" onClick={onDelete} disabled={isLocked}>
+              Delete
+            </Button>
+          </span>
+        </Tooltip>
         <Button variant="contained" onClick={onEdit}>
           Edit
         </Button>

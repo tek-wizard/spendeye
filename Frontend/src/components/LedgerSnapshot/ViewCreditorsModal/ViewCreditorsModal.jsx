@@ -93,22 +93,17 @@ export const ViewCreditorsModal = ({ open, onClose, creditors }) => {
                       color: "accent.contrastText",
                     }}
                   >
-                    {creditor.name.charAt(0)}
+                    {creditor.name.charAt(0).toUpperCase()}
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
                   primary={creditor.name}
-                  slotProps={{
-                    primary: {
-                      sx: {
-                        fontWeight: "medium",
-                        flex: 1,
-                        minWidth: 0,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      },
-                    },
+                  primaryTypographyProps={{ 
+                    sx: { 
+                      fontWeight: 'medium', 
+                      whiteSpace: 'normal', // Allow wrapping
+                      wordBreak: 'break-word' // Break long words
+                    } 
                   }}
                 />
                 <Typography sx={{ color: "error.main", fontWeight: "bold" }}>

@@ -182,6 +182,18 @@ export const RecentTransactionsList = ({
                               fontWeight: "medium",
                               noWrap: true,
                             }}
+                            secondaryTypographyProps={{
+                              noWrap: true,
+                              sx: {
+                                display: "-webkit-box",
+                                WebkitBoxOrient: "vertical",
+                                WebkitLineClamp: 1,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "normal",
+                                color: "text.secondary",
+                              },
+                            }}
                           />
 
                           <Typography

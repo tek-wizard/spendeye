@@ -19,6 +19,8 @@ export const useUpdateExpense = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['ledgerSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['debtors'] });
+      queryClient.invalidateQueries({ queryKey: ['creditors'] });
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || 'Failed to update expense');

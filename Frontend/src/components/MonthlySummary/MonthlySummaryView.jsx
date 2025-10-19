@@ -4,9 +4,11 @@ import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { useTheme } from '@mui/material/styles';
 import { TrendIndicator } from './TrendIndicator';
 import { PacingIndicator } from './PacingIndicator';
+import { useNavigate } from 'react-router-dom';
 
 export const MonthlySummaryView = ({ data }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const { currentSpending, budget, trendPercentage, sparklineData } = data;
 
   const budgetUsedPercent = (currentSpending / budget) * 100;
@@ -19,7 +21,7 @@ export const MonthlySummaryView = ({ data }) => {
 
   return (
     <Card sx={{ position: 'relative', overflow: 'hidden' }}>
-      <CardActionArea onClick={() => alert('Navigate to full report page!')}>
+      <CardActionArea onClick={() => navigate('/insights')}>
         <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.2 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={sparklineData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>

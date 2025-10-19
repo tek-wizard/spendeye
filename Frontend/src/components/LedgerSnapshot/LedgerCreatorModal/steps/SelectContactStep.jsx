@@ -83,12 +83,14 @@ export const SelectContactStep = ({ onSelect, type, selectedContact, onAddNewCon
 
       <Box sx={{ flexGrow: 1, width: "100%", maxWidth: 350, overflowY: "auto", mt: 1 }}>
         <List>
-          {/* Render the single, smart-sorted list */}
           {filteredContacts.map((contact) => (
             <ListItemButton key={contact.id} onClick={() => onSelect(contact)} selected={selectedContact?.id === contact.id}>
               <ListItemAvatar><Avatar sx={{ bgcolor: "accent.main", color: "accent.contrastText" }}>{contact.name.charAt(0).toUpperCase()}</Avatar></ListItemAvatar>
-              <ListItemText primary={contact.name} />
-              <BalanceAnnotation balance={contact.balance} />
+              <ListItemText
+                primary={contact.name}
+                secondary={<BalanceAnnotation balance={contact.balance} />}
+                primaryTypographyProps={{ style: { whiteSpace: 'normal', wordBreak: 'break-word' } }}
+              />
             </ListItemButton>
           ))}
            {filteredContacts.length === 0 && (

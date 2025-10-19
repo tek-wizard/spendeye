@@ -1,25 +1,23 @@
 import React from 'react';
-import { Box, Typography, Button, Stack } from '@mui/material';
+import { Box, Typography, Stack, ToggleButtonGroup, ToggleButton, useTheme } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import { useTheme } from '@mui/material/styles';
 
 export const SelectTypeStep = ({ onSelect }) => {
     const theme = useTheme();
 
-    // We define the types here, separating the icon from the color
     const types = [
       { 
         value: 'Given', 
         label: 'Money Given', 
-        description: 'Money left your possession (e.g., a loan or paying someone back).', 
+        description: 'You paid someone or lent them money.', 
         Icon: ArrowUpwardIcon,
         color: theme.palette.error.main
       },
       { 
         value: 'Received', 
         label: 'Money Received', 
-        description: 'Money entered your possession (e.g., borrowing or getting paid back).', 
+        description: 'You received a payment or borrowed money.', 
         Icon: ArrowDownwardIcon,
         color: theme.palette.success.main
       },
@@ -31,39 +29,46 @@ export const SelectTypeStep = ({ onSelect }) => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                 What kind of transaction is this?
             </Typography>
-            <Stack spacing={2} sx={{ width: '100%', maxWidth: 350 }}>
+
+            <ToggleButtonGroup
+                orientation="vertical"
+                exclusive
+                fullWidth
+                sx={{ maxWidth: 350, gap: 1 }}
+                onChange={(e, newValue) => { if (newValue) onSelect(newValue); }}
+            >
                 {types.map(type => (
-                    <Button
+                    <ToggleButton
                         key={type.value}
-                        onClick={() => onSelect(type.value)}
-                        variant="contained" // Use contained for a card-like feel
-                        size="large"
+                        value={type.value}
                         sx={{ 
-                            justifyContent: 'flex-start', 
-                            p: 2, 
-                            textAlign: 'left', 
+                            justifyContent: 'flex-start',
+                            textAlign: 'left',
+                            p: 2,
+                            borderRadius: '12px !important', // Enforce consistent border radius
+                            border: `1px solid ${theme.palette.divider} !important`,
                             textTransform: 'none',
                             lineHeight: 1.4,
-                            bgcolor: 'background.paper', // A neutral, classy background
-                            color: 'text.primary',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            boxShadow: 'none',
-                            '&:hover': {
-                                bgcolor: theme.palette.action.hover,
-                                boxShadow: 'none',
+                            '&.Mui-selected': {
+                                bgcolor: 'primary.main',
+                                color: 'primary.contrastText',
+                                '& .MuiTypography-colorTextSecondary': { // Target the description text
+                                    color: 'primary.contrastText',
+                                    opacity: 0.7
+                                }
                             }
                         }}
                     >
-                        {/* The icon is now styled directly, making it a subtle accent */}
                         <type.Icon sx={{ mr: 2, color: type.color }} />
                         <Box>
                             <Typography sx={{ fontWeight: 'medium' }}>{type.label}</Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'normal' }}>{type.description}</Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'normal' }}>
+                                {type.description}
+                            </Typography>
                         </Box>
-                    </Button>
+                    </ToggleButton>
                 ))}
-            </Stack>
+            </ToggleButtonGroup>
         </Box>
     );
 };

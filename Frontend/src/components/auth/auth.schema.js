@@ -20,7 +20,11 @@ export const loginSchema = z.object({
 
 //Schema for add contact form
 export const contactSchema = z.object({
-  contactName: z.string().min(1, { message: "Contact name is required" }),
-  phoneNumber: z.string().regex(phoneRegex, { message: "Invalid Indian phone number" }).optional()
-  .or(z.literal('')),
+  contactName: z.string()
+    .min(1, { message: "Contact name is required" })
+    .max(30, { message: "Contact name cannot be longer than 30 characters" }),
+  phoneNumber: z.string()
+    .regex(phoneRegex, { message: "Invalid Indian phone number" })
+    .optional()
+    .or(z.literal('')),
 });

@@ -36,7 +36,15 @@ import EventIcon from "@mui/icons-material/Event"
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday"
 import DateRangeIcon from "@mui/icons-material/DateRange"
 import AllInclusiveIcon from "@mui/icons-material/AllInclusive"
-import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, format, isSameDay } from "date-fns";
+import {
+  startOfMonth,
+  endOfMonth,
+  subMonths,
+  startOfYear,
+  endOfYear,
+  format,
+  isSameDay,
+} from "date-fns"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -95,23 +103,22 @@ export const FilterSidebar = React.memo(
     }
 
     // ---  THE NEW MUI DATE PICKER ---
-    const [dateAnchorEl, setDateAnchorEl] = useState(null);
-    const handleDateMenuClick = (event) => setDateAnchorEl(event.currentTarget);
-    const handleDateMenuClose = () => setDateAnchorEl(null);
+    const [dateAnchorEl, setDateAnchorEl] = useState(null)
+    const handleDateMenuClick = (event) => setDateAnchorEl(event.currentTarget)
+    const handleDateMenuClose = () => setDateAnchorEl(null)
 
-  // const handleDateApply = () => {
-  //     const [start, end] = tempDateRange;
-  //     if (!start || !end) return; // Prevent applying an incomplete range
+    // const handleDateApply = () => {
+    //     const [start, end] = tempDateRange;
+    //     if (!start || !end) return; // Prevent applying an incomplete range
 
-  //     const isCustom = !datePresets.some(p => isSameDay(p.startDate, start) && isSameDay(p.endDate, end));
-  //     const label = isCustom 
-  //         ? `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`
-  //         : datePresets.find(p => isSameDay(p.startDate, start))?.label || 'Custom';
-      
-  //     setDateRange({ label, startDate: start, endDate: end });
-  //     handleDateMenuClose();
-  // };
+    //     const isCustom = !datePresets.some(p => isSameDay(p.startDate, start) && isSameDay(p.endDate, end));
+    //     const label = isCustom
+    //         ? `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`
+    //         : datePresets.find(p => isSameDay(p.startDate, start))?.label || 'Custom';
 
+    //     setDateRange({ label, startDate: start, endDate: end });
+    //     handleDateMenuClose();
+    // };
 
     // --- STATE & LOGIC FOR CUSTOM AMOUNT PRESETS ---
     const [isAmountModalOpen, setAmountModalOpen] = useState(false)
@@ -361,35 +368,42 @@ export const FilterSidebar = React.memo(
                       flexWrap: "wrap",
                     }}
                   >
-                    {allCategories.map((cat) => (
-                      <FormControlLabel
-                        key={cat}
-                        control={
-                          <Checkbox
-                            checked={filters.selectedCategories.includes(cat)}
-                            onChange={() => handleCategoryToggle(cat)}
-                            sx={{ display: "none" }}
-                          />
-                        }
-                        label={cat}
-                        sx={{
-                          m: 0,
-                          "& .MuiTypography-root": {
-                            border: 1,
-                            borderColor: "divider",
-                            borderRadius: 4,
-                            padding: "4px 12px",
-                            cursor: "pointer",
-                            "&:hover": { bgcolor: "action.hover" },
-                            ...(filters.selectedCategories.includes(cat) && {
-                              bgcolor: "primary.main",
-                              color: "primary.contrastText",
-                              borderColor: "primary.main",
-                            }),
-                          },
-                        }}
-                      />
-                    ))}
+                    {allCategories.map((cat) => {
+                      const isSelected =
+                        filters.selectedCategories.includes(cat)
+                      return (
+                        <FormControlLabel
+                          key={cat}
+                          control={
+                            <Checkbox
+                              checked={isSelected}
+                              onChange={() => handleCategoryToggle(cat)}
+                              sx={{ display: "none" }}
+                            />
+                          }
+                          label={cat}
+                          sx={{
+                            m: 0,
+                            "& .MuiTypography-root": {
+                              border: 1,
+                              borderColor: "divider",
+                              borderRadius: 4,
+                              padding: "4px 12px",
+                              cursor: "pointer",
+                              // Only apply hover if not selected
+                              "&:hover": !isSelected
+                                ? { bgcolor: "action.hover" }
+                                : {},
+                              ...(isSelected && {
+                                bgcolor: "primary.main",
+                                color: "primary.contrastText",
+                                borderColor: "primary.main",
+                              }),
+                            },
+                          }}
+                        />
+                      )
+                    })}
                   </FormGroup>
                 </AccordionDetails>
               </Accordion>
@@ -590,15 +604,13 @@ export const FilterSidebar = React.memo(
           </form>
         </Dialog>
 
-
         {/* Date Picker */}
-        <DatePickerMenu 
-            anchorEl={dateAnchorEl}
-            onClose={handleDateMenuClose}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
+        <DatePickerMenu
+          anchorEl={dateAnchorEl}
+          onClose={handleDateMenuClose}
+          dateRange={dateRange}
+          setDateRange={setDateRange}
         />
-
       </>
     )
   }

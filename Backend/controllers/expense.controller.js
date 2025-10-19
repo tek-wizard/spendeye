@@ -80,12 +80,11 @@ export const handleEditExpense = async (req, res) => {
     }
 
     // Delete old ledgers if expense was split
-    if (expense.isSplit && Array.isArray(expense.splitDetails)) {
-      await Promise.all(
-        expense.splitDetails.map((split) =>
-          Ledger.findByIdAndDelete(split.ledgerId)
-        )
-      )
+    if (expense.isSplit && expense.splitDetails && expense.splitDetails.length > 0) {
+      const ledgerIdsToDelete = expense.splitDetails.map(split => split.ledgerId).filter(id => id);
+      if (ledgerIdsToDelete.length > 0) {
+        await Ledger.deleteMany({ _id: { $in: ledgerIdsToDelete } });
+      }
     }
 
     const { notes, date, isSplit, splitDetails = [] } = req.body
@@ -277,12 +276,11 @@ export const handleDeleteExpense = async (req, res) => {
       })
     }
 
-    if (expense.isSplit) {
-      await Promise.all(
-        expense.splitDetails.map((split) => {
-          Ledger.findByIdAndDelete(split.ledgerId)
-        })
-      )
+    if (expense.isSplit && expense.splitDetails && expense.splitDetails.length > 0) {
+      const ledgerIdsToDelete = expense.splitDetails.map(split => split.ledgerId).filter(id => id);
+      if (ledgerIdsToDelete.length > 0) {
+        await Ledger.deleteMany({ _id: { $in: ledgerIdsToDelete } });
+      }
     }
 
     return res.status(201).json({

@@ -36,10 +36,23 @@ export const DatePickerMenu = ({
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
-  // --- STATE ---
+  // --- PRESETS ---
+  const now = new Date()
+  const datePresets = [
+    { label: "This Month", range: [startOfMonth(now), endOfMonth(now)] },
+    {
+      label: "Last Month",
+      range: [startOfMonth(subMonths(now, 1)), endOfMonth(subMonths(now, 1))],
+    },
+    { label: "This Year", range: [startOfYear(now), endOfYear(now)] },
+    { label: "All Time", range: [new Date("1970-01-01"), now] },
+  ]
+
+  // --- STATE (default = All Time) ---
+  const defaultAllTime = datePresets.find((p) => p.label === "All Time").range
   const [tempDateRange, setTempDateRange] = useState([
-    dateRange.startDate,
-    dateRange.endDate,
+    dateRange?.startDate || defaultAllTime[0],
+    dateRange?.endDate || defaultAllTime[1],
   ])
   const [start, end] = tempDateRange
   const [visibleMonths, setVisibleMonths] = useState([
@@ -58,7 +71,7 @@ export const DatePickerMenu = ({
       <PickersDay
         {...other}
         day={day}
-        selected={false} // Custom styling handles selection
+        selected={false}
         disableMargin
         sx={{
           ...(isSelected && {
@@ -116,18 +129,6 @@ export const DatePickerMenu = ({
     onClose()
   }
 
-  // --- PRESETS ---
-  const now = new Date()
-  const datePresets = [
-    { label: "This Month", range: [startOfMonth(now), endOfMonth(now)] },
-    {
-      label: "Last Month",
-      range: [startOfMonth(subMonths(now, 1)), endOfMonth(subMonths(now, 1))],
-    },
-    { label: "This Year", range: [startOfYear(now), endOfYear(now)] },
-    { label: "All Time", range: [new Date("1970-01-01"), now] },
-  ]
-
   const selectedPreset = datePresets.find(
     (p) =>
       start && end && isSameDay(p.range[0], start) && isSameDay(p.range[1], end)
@@ -163,17 +164,14 @@ export const DatePickerMenu = ({
               sx={{
                 fontWeight: "bold",
                 minHeight: 24,
-                fontSize: {
-                  xs: "0.8rem",
-                  sm: "0.9rem",
-                  md: "1rem",
-                },
+                fontSize: { xs: "0.8rem", sm: "0.9rem", md: "1rem" },
                 whiteSpace: "nowrap",
               }}
             >
               {getHeaderText()}
             </Typography>
           </Box>
+
           <Box
             sx={{ display: "flex", flexDirection: isMobile ? "column" : "row" }}
           >
@@ -212,10 +210,7 @@ export const DatePickerMenu = ({
               ) : (
                 <>
                   <Box sx={{ p: 2 }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ textAlign: "center", mb: 1 }}
-                    >
+                    <Typography variant="subtitle2" sx={{ textAlign: "center", mb: 1 }}>
                       Start Date
                     </Typography>
                     <Typography
@@ -249,10 +244,7 @@ export const DatePickerMenu = ({
                   </Box>
                   <Divider orientation="vertical" flexItem />
                   <Box sx={{ p: 2 }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ textAlign: "center", mb: 1 }}
-                    >
+                    <Typography variant="subtitle2" sx={{ textAlign: "center", mb: 1 }}>
                       End Date
                     </Typography>
                     <Typography
@@ -275,10 +267,7 @@ export const DatePickerMenu = ({
                       month={visibleMonths[1]}
                       onMonthChange={(date) => {
                         const newEndMonth = date
-                        const newStartMonth = isSameMonth(
-                          date,
-                          visibleMonths[0]
-                        )
+                        const newStartMonth = isSameMonth(date, visibleMonths[0])
                           ? subMonths(date, 1)
                           : visibleMonths[0]
                         setVisibleMonths([newStartMonth, newEndMonth])
@@ -291,13 +280,9 @@ export const DatePickerMenu = ({
               )}
             </Box>
           </Box>
+
           <Divider />
-          <Stack
-            direction="row"
-            justifyContent="flex-end"
-            spacing={2}
-            sx={{ p: 2 }}
-          >
+          <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ p: 2 }}>
             <Button onClick={onClose}>Cancel</Button>
             <Button
               onClick={handleApply}

@@ -1,14 +1,21 @@
 // src/components/common/AddContactModal.jsx
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback } from "react"
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions, Button,
-  TextField, Stack, CircularProgress, Box
-} from "@mui/material";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { contactSchema } from "../auth/auth.schema";
-import { useAddContact } from "../../hooks/useAddContact";
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Stack,
+  CircularProgress,
+  Box,
+} from "@mui/material"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { contactSchema } from "../auth/auth.schema"
+import { useAddContact } from "../../hooks/useAddContact"
 
 export const AddContactModal = ({ open, onClose, onContactCreated }) => {
   const {
@@ -16,42 +23,42 @@ export const AddContactModal = ({ open, onClose, onContactCreated }) => {
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm({
     resolver: zodResolver(contactSchema),
-  });
+  })
 
   const {
     addContact,
     isAddingContact,
     isSuccess,
     reset: resetMutation,
-  } = useAddContact();
+  } = useAddContact()
 
   const onSubmit = (data) => {
     addContact(data, {
       onSuccess: (responseData) => {
         if (onContactCreated && responseData.addedContact) {
-          onContactCreated(responseData.addedContact);
+          onContactCreated(responseData.addedContact)
         }
-      }
-    });
-  };
-  
+      },
+    })
+  }
+
   const handleClose = useCallback(() => {
-    reset();
-    resetMutation();
-    onClose();
-  }, [onClose, reset, resetMutation]);
+    reset()
+    resetMutation()
+    onClose()
+  }, [onClose, reset, resetMutation])
 
   useEffect(() => {
     if (isSuccess) {
-      handleClose();
+      handleClose()
     }
-  }, [isSuccess, handleClose]);
+  }, [isSuccess, handleClose])
 
   return (
-     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
-      {/* The form submit is now only triggered by its own button's onClick */}
+    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
       <Box component="form" onSubmit={(e) => e.preventDefault()}>
         <DialogTitle sx={{ fontWeight: "bold" }}>Add New Contact</DialogTitle>
         <DialogContent>
@@ -60,8 +67,16 @@ export const AddContactModal = ({ open, onClose, onContactCreated }) => {
               label="Contact Name"
               {...register("contactName")}
               error={!!errors.contactName}
-              helperText={errors.contactName?.message}
+              helperText={
+                errors.contactName?.message ||
+                `${watch("contactName")?.length || 0} / 30`
+              }
               autoFocus
+              slotProps={{
+                htmlInput: {
+                  maxLength: 30,
+                },
+              }}
             />
             <TextField
               label="Phone Number (Optional)"
@@ -74,14 +89,13 @@ export const AddContactModal = ({ open, onClose, onContactCreated }) => {
                   : "Optional: can be edited later"
               }
             />
-         </Stack>
+          </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 1 }}>
           <Button onClick={handleClose}>Cancel</Button>
           <Button
-            // THE FIX IS HERE
-            type="button" // Change from "submit" to "button"
-            onClick={handleSubmit(onSubmit)} // Trigger the submit handler manually
+            type="button"
+            onClick={handleSubmit(onSubmit)}
             variant="contained"
             disabled={isAddingContact}
           >
@@ -90,5 +104,5 @@ export const AddContactModal = ({ open, onClose, onContactCreated }) => {
         </DialogActions>
       </Box>
     </Dialog>
-  );
-};
+  )
+}

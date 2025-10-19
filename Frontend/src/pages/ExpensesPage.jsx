@@ -7,7 +7,6 @@ import {
   useMediaQuery,
   Typography,
   Stack,
-  Drawer,
   Paper,
   TextField,
   InputAdornment,
@@ -16,22 +15,35 @@ import {
   Badge,
   Modal,
   Slide,
-  Backdrop
+  Backdrop,
 } from "@mui/material"
-import { startOfMonth, endOfMonth, differenceInDays } from "date-fns"
+import {
+  startOfMonth,
+  endOfMonth,
+  differenceInDays,
+  format,
+  isToday,
+  isYesterday,
+} from "date-fns"
 import SearchIcon from "@mui/icons-material/Search"
 import TuneIcon from "@mui/icons-material/Tune"
+import WarningAmberIcon from "@mui/icons-material/WarningAmber"
 
-// Import all perfected child components and hooks
+// --- Components ---
 import { ExpenseSummaryCard } from "../components/ExpensesPage/ExpenseSummaryCard"
-import { FilterSheet } from "../components/ExpensesPage/FilterSheet"
 import { FullTransactionList } from "../components/ExpensesPage/FullTransactionList"
 import { ExpenseBarChart } from "../components/ExpensesPage/ExpenseBarChart"
 import { FilterSidebar } from "../components/ExpensesPage/FilterSidebar"
 import { MetricCard } from "../components/ExpensesPage/MetricCard"
+import { TransactionDetailModal } from "../components/RecentTransactions/TransactionDetailModal"
+import { EditExpenseModal } from "../components/AddExpenseFlow/EditExpenseModal"
+import { ConfirmationModal } from "../components/ConfirmationModal"
+
+// --- Hooks & Utils ---
 import { useExpenses } from "../hooks/useExpenses"
 import { useDebounce } from "../hooks/useDebounce"
-import { FilterPanel } from "../components/ExpensesPage/FilterPanel"
+import { useDeleteExpense } from "../hooks/useDeleteExpense"
+import { useCategoryMaps } from "../utils/categoryMaps"
 
 const defaultFilters = {
   selectedCategories: [],
@@ -43,18 +55,29 @@ const ExpensesPage = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
-  // --- STATE & DATA LOGIC (This logic is final and correct) ---
+  // --- STATE ---
   const [dateRange, setDateRange] = useState({
-    startDate: startOfMonth(new Date()),
-    endDate: endOfMonth(new Date()),
-    label: "This Month",
-  })
+    startDate: new Date('1970-01-01'),
+    endDate: new Date(),
+    label: 'All Time',
+});
   const [searchTerm, setSearchTerm] = useState("")
   const [filters, setFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
   const [isFilterPanelOpen, setFilterPanelOpen] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState(null)
+  const [expenseToEdit, setExpenseToEdit] = useState(null)
+  const [expenseToDelete, setExpenseToDelete] = useState(null)
+
+  // --- HOOKS ---
   const { rawExpenses, isLoading } = useExpenses(dateRange)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
+  const { deleteExpense, isDeleting } = useDeleteExpense()
+  const { categoryColors, categoryIcons } = useCategoryMaps()
+
+  // --- DATA PROCESSING PIPELINE ---
+
+  // 1. Apply user filters (search, category, etc.)
   const filteredTransactions = useMemo(() => {
     if (!rawExpenses) return []
     return rawExpenses.filter((tx) => {
@@ -73,69 +96,128 @@ const ExpensesPage = () => {
       return searchMatch && categoryMatch && amountMatch && splitMatch
     })
   }, [rawExpenses, filters, debouncedSearchTerm])
+
+  // 2. Add groupPosition info for visual stacking (replicating Dashboard logic)
+  const transactionsWithGroupInfo = useMemo(() => {
+    return filteredTransactions.map((tx, index, arr) => {
+      const prevTx = arr[index - 1]
+      const nextTx = arr[index + 1]
+
+      const isFirstInGroup =
+        tx.groupId && (!prevTx || prevTx.groupId !== tx.groupId)
+      const isLastInGroup =
+        tx.groupId && (!nextTx || nextTx.groupId !== tx.groupId)
+      const isInGroup = tx.groupId && !isFirstInGroup && !isLastInGroup
+
+      return {
+        ...tx,
+        groupPosition: isFirstInGroup
+          ? "first"
+          : isLastInGroup
+          ? "last"
+          : isInGroup
+          ? "middle"
+          : null,
+      }
+    })
+  }, [filteredTransactions])
+
+  // 3. Calculate metrics based on the fully filtered list
   const metrics = useMemo(() => {
-    const totalSpent = filteredTransactions.reduce(
+    const totalSpent = transactionsWithGroupInfo.reduce(
       (acc, tx) => acc + tx.totalAmount,
       0
     )
-    const totalTransactions = filteredTransactions.length
+    const totalTransactions = transactionsWithGroupInfo.length
     const days = differenceInDays(dateRange.endDate, dateRange.startDate) + 1
     const averageDailySpend = totalSpent / (days > 0 ? days : 1)
     return { totalSpent, totalTransactions, averageDailySpend }
-  }, [filteredTransactions, dateRange])
+  }, [transactionsWithGroupInfo, dateRange])
+
+  // 4. Calculate category breakdown
   const categoryBreakdown = useMemo(() => {
-    const breakdown = filteredTransactions.reduce((acc, tx) => {
-      if (!acc[tx.category]) {
-        acc[tx.category] = 0
-      }
+    const breakdown = transactionsWithGroupInfo.reduce((acc, tx) => {
+      if (!acc[tx.category]) acc[tx.category] = 0
       acc[tx.category] += tx.totalAmount
       return acc
     }, {})
     return Object.entries(breakdown)
       .map(([category, total]) => ({ category, total }))
       .sort((a, b) => b.total - a.total)
-  }, [filteredTransactions])
+  }, [transactionsWithGroupInfo])
+
+  // 5. Paginate the fully processed list
   const paginatedTransactions = useMemo(() => {
     const limit = 25
     const start = (page - 1) * limit
-    const end = start + limit
-    return filteredTransactions.slice(start, end)
-  }, [filteredTransactions, page])
+    // THE FIX: We now slice the list that has the group info
+    return transactionsWithGroupInfo.slice(start, start + limit)
+  }, [transactionsWithGroupInfo, page])
+
+  // 6. Calculate pagination details
   const pagination = useMemo(
     () => ({
       currentPage: page,
-      totalPages: Math.ceil(filteredTransactions.length / 25),
-      totalTransactions: filteredTransactions.length,
+      totalPages: Math.ceil(transactionsWithGroupInfo.length / 25),
+      totalTransactions: transactionsWithGroupInfo.length,
     }),
-    [filteredTransactions, page]
+    [transactionsWithGroupInfo, page]
   )
+
+  // 7. Group the final paginated list by date and add UI properties (icon, color, type)
+  const groupedTransactions = useMemo(() => {
+    return paginatedTransactions.reduce((acc, tx) => {
+      const date = new Date(tx.date)
+      const group = isToday(date)
+        ? "Today"
+        : isYesterday(date)
+        ? "Yesterday"
+        : format(date, "MMMM d, yyyy")
+      if (!acc[group]) acc[group] = []
+
+      acc[group].push({
+        ...tx,
+        type: tx.category,
+        amount: tx.totalAmount,
+        icon: categoryIcons[tx.category] || categoryIcons["Miscellaneous"],
+        color: categoryColors[tx.category] || categoryColors["Miscellaneous"],
+      })
+      return acc
+    }, {})
+  }, [paginatedTransactions, categoryIcons, categoryColors])
+
+  // --- HANDLERS ---
   const handleFilterChange = (newFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }))
     setPage(1)
   }
-  const handleApplyFilters = () => {
-    setFilterPanelOpen(false)
-  }
+  const handleApplyFilters = () => setFilterPanelOpen(false)
   const handleResetFilters = () => {
-    setFilters(defaultFilters)
-    setSearchTerm("")
-    setPage(1)
-    setFilterPanelOpen(false)
-  }
+    setFilters(defaultFilters);
+    setSearchTerm('');
+    setPage(1);
+    setDateRange({ // Add this part
+        startDate: new Date('1970-01-01'),
+        endDate: new Date(),
+        label: 'All Time',
+    });
+    setFilterPanelOpen(false);
+};
   const handleCategoryChartClick = (category) => {
     setFilters((prev) => ({ ...prev, selectedCategories: [category] }))
     setPage(1)
   }
+
   const activeFilterCount =
-    (dateRange.label !== "This Month" ? 1 : 0) +
+    (dateRange.label !== 'All Time' ? 1 : 0) +
     filters.selectedCategories.length +
     (filters.isSplitFilter !== null ? 1 : 0) +
     (filters.amountRange[0] > 0 || filters.amountRange[1] < 50000 ? 1 : 0)
 
-
+  // --- UI ---
   return (
     <Box>
-      {/* --- MOBILE-ONLY LAYOUT (This is already minimal and professional) --- */}
+      {/* --- MOBILE LAYOUT --- */}
       {isMobile && (
         <Stack spacing={3}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -163,11 +245,13 @@ const ExpensesPage = () => {
               </IconButton>
             </Tooltip>
           </Box>
+
           <ExpenseSummaryCard
             metrics={metrics}
             categoryBreakdown={categoryBreakdown}
             isLoading={isLoading}
           />
+
           {filters.selectedCategories.length > 0 && (
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               {filters.selectedCategories.map((cat) => (
@@ -192,62 +276,82 @@ const ExpensesPage = () => {
               ))}
             </Box>
           )}
+
           <FullTransactionList
-            transactions={paginatedTransactions}
+            groupedTransactions={groupedTransactions}
             pagination={pagination}
             isLoading={isLoading}
             isFetching={false}
             onPageChange={(event, newPage) => setPage(newPage)}
+            onTransactionClick={setSelectedTransaction}
           />
         </Stack>
       )}
 
-      {/* --- DESKTOP-ONLY AESTHETIC LAYOUT --- */}
+      {/* --- DESKTOP LAYOUT --- */}
       {!isMobile && (
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-          {/* --- Left Column: Primary Data Feed & Controls --- */}
           <div className="md:col-span-8">
             <Stack spacing={3}>
-              {/* 2. Unified Control Panel */}
               <Paper
                 variant="outlined"
                 sx={{
-                  p: 1.5,
                   display: "flex",
                   alignItems: "center",
-                  gap: 2,
-                  borderRadius: 2,
+                  gap: 1,
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  borderColor: "divider",
+                  height: 48,
+                  bgcolor: "rgba(200, 200, 200, 0.15)",
                 }}
               >
                 <TextField
                   fullWidth
-                  variant="standard"
-                  placeholder="Search in notes..."
+                  variant="outlined"
+                  placeholder="Search transactions..."
+                  size="small"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon color="disabled" />
+                        <SearchIcon
+                          fontSize="small"
+                          sx={{ color: "text.secondary" }}
+                        />
                       </InputAdornment>
                     ),
-                    disableUnderline: true,
+                    sx: {
+                      height: "100%",
+                      "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+                      "& input": { padding: "10px 0" },
+                      fontSize: "0.95rem",
+                    },
                   }}
-                  sx={{ pl: 1 }}
                 />
+
                 <Tooltip title="Date & Advanced Filters">
                   <IconButton
                     onClick={() => setFilterPanelOpen(true)}
-                    color={activeFilterCount > 0 ? "primary" : "inherit"}
+                    color={activeFilterCount > 0 ? "primary" : "default"}
+                    sx={{
+                      height: "100%",
+                      px: 1.5,
+                      borderLeft: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 0,
+                      bgcolor: "rgba(200,200,200,0.2)",
+                      "&:hover": { bgcolor: "rgba(200,200,200,0.3)" },
+                    }}
                   >
                     <Badge badgeContent={activeFilterCount} color="primary">
-                      <TuneIcon />
+                      <TuneIcon fontSize="small" />
                     </Badge>
                   </IconButton>
                 </Tooltip>
               </Paper>
 
-              {/* 1. Metrics */}
               <Grid container spacing={2.5}>
                 <Grid item xs={12} sm={4}>
                   <MetricCard
@@ -278,7 +382,6 @@ const ExpensesPage = () => {
                 </Grid>
               </Grid>
 
-              {/* 3. Active Filter Chips */}
               {filters.selectedCategories.length > 0 && (
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                   {filters.selectedCategories.map((cat) => (
@@ -304,18 +407,17 @@ const ExpensesPage = () => {
                 </Box>
               )}
 
-              {/* 4. Transaction List */}
               <FullTransactionList
-                transactions={paginatedTransactions}
+                groupedTransactions={groupedTransactions}
                 pagination={pagination}
                 isLoading={isLoading}
                 isFetching={false}
                 onPageChange={(event, newPage) => setPage(newPage)}
+                onTransactionClick={setSelectedTransaction}
               />
             </Stack>
           </div>
 
-          {/* --- Right Column: Visualization --- */}
           <div className="md:col-span-4">
             <Box sx={{ position: "sticky", top: 100 }}>
               <ExpenseBarChart
@@ -328,49 +430,104 @@ const ExpensesPage = () => {
         </div>
       )}
 
-      {/* Filter Panel: Renders the correct component based on screen size */}
+      {/* --- FILTER PANEL --- */}
       <Modal
-                open={isFilterPanelOpen}
-                onClose={() => setFilterPanelOpen(false)}
-                closeAfterTransition
-                slots={{ backdrop: Backdrop }}
-                slotProps={{
-                    backdrop: {
-                        timeout: 500,
-                        sx: {
-                            backdropFilter: 'blur(10px)',
-                            backgroundColor: 'rgba(0,0,0,0.7)',
-                        }
-                    },
-                }}
-            >
-                <Slide direction={isMobile ? "up" : "left"} in={isFilterPanelOpen}>
-                    {/* This Box is the positioning container for our floating panel */}
-                    <Box sx={{
-                        position: 'absolute',
-                        outline: 0, // Remove focus outline from the modal
-                        // --- Responsive Positioning ---
-                        ...(isMobile 
-                            // On mobile, it floats at the bottom with margins
-                            ? { bottom: 16, left: 16, right: 16 } 
-                            // On desktop, it's vertically centered on the right with a margin
-                            : { top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', p: 4 }
-                        )
-                    }}>
-                        <FilterSidebar 
-                            dateRange={dateRange} 
-                            setDateRange={(newRange) => { setDateRange(newRange); setPage(1); }}
-                            filters={filters} 
-                            onCategoryChange={(newCats) => handleFilterChange({ selectedCategories: newCats })} 
-                            onAmountChange={(newRange) => handleFilterChange({ amountRange: newRange })} 
-                            onSplitChange={(newSplit) => handleFilterChange({ isSplitFilter: newSplit })} 
-                            onApply={handleApplyFilters} 
-                            onReset={handleResetFilters} 
-                        />
-                    </Box>
-                </Slide>
-            </Modal>
-      
+        open={isFilterPanelOpen}
+        onClose={() => setFilterPanelOpen(false)}
+        closeAfterTransition
+        slots={{ backdrop: Backdrop }}
+        slotProps={{
+          backdrop: {
+            timeout: 500,
+            sx: {
+              backdropFilter: "blur(10px)",
+              backgroundColor: "rgba(0,0,0,0.7)",
+            },
+          },
+        }}
+      >
+        <Slide direction={isMobile ? "up" : "left"} in={isFilterPanelOpen}>
+          <Box
+            sx={{
+              position: "absolute",
+              outline: 0,
+              ...(isMobile
+                ? { bottom: 16, left: 16, right: 16 }
+                : {
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    p: 4,
+                  }),
+            }}
+          >
+            <FilterSidebar
+              dateRange={dateRange}
+              setDateRange={(newRange) => {
+                setDateRange(newRange)
+                setPage(1)
+              }}
+              filters={filters}
+              onCategoryChange={(newCats) =>
+                handleFilterChange({ selectedCategories: newCats })
+              }
+              onAmountChange={(newRange) =>
+                handleFilterChange({ amountRange: newRange })
+              }
+              onSplitChange={(newSplit) =>
+                handleFilterChange({ isSplitFilter: newSplit })
+              }
+              onApply={handleApplyFilters}
+              onReset={handleResetFilters}
+            />
+          </Box>
+        </Slide>
+      </Modal>
+
+      {/* --- MODALS --- */}
+      <TransactionDetailModal
+        transaction={selectedTransaction}
+        open={Boolean(selectedTransaction)}
+        onClose={() => setSelectedTransaction(null)}
+        isLocked={["Debt Repayment", "Loan Given"].includes(
+          selectedTransaction?.category
+        )}
+        onEdit={() => {
+          setExpenseToEdit(selectedTransaction)
+          setSelectedTransaction(null)
+        }}
+        onDelete={() => {
+          setExpenseToDelete(selectedTransaction)
+          setSelectedTransaction(null)
+        }}
+      />
+
+      <EditExpenseModal
+        expense={expenseToEdit}
+        open={Boolean(expenseToEdit)}
+        onClose={() => setExpenseToEdit(null)}
+      />
+
+      <ConfirmationModal
+        open={Boolean(expenseToDelete)}
+        onClose={() => setExpenseToDelete(null)}
+        onConfirm={() => {
+          deleteExpense(expenseToDelete._id, {
+            onSuccess: () => setExpenseToDelete(null),
+          })
+        }}
+        title="Delete Expense?"
+        confirmText="Delete"
+        confirmColor="error"
+        isLoading={isDeleting}
+        icon={<WarningAmberIcon sx={{ fontSize: 32 }} />}
+      >
+        <Typography variant="body2">
+          This action cannot be <strong>undone</strong>.
+        </Typography>
+      </ConfirmationModal>
     </Box>
   )
 }
