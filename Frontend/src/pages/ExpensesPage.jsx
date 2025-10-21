@@ -16,6 +16,7 @@ import {
   Modal,
   Slide,
   Backdrop,
+  Skeleton,
 } from "@mui/material"
 import {
   startOfMonth,
@@ -55,12 +56,12 @@ const ExpensesPage = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
-  // --- STATE ---
+  // --- STATE and DATA PROCESSING ---
   const [dateRange, setDateRange] = useState({
-    startDate: new Date('1970-01-01'),
+    startDate: new Date("1970-01-01"),
     endDate: new Date(),
-    label: 'All Time',
-});
+    label: "All Time",
+  })
   const [searchTerm, setSearchTerm] = useState("")
   const [filters, setFilters] = useState(defaultFilters)
   const [page, setPage] = useState(1)
@@ -68,22 +69,16 @@ const ExpensesPage = () => {
   const [selectedTransaction, setSelectedTransaction] = useState(null)
   const [expenseToEdit, setExpenseToEdit] = useState(null)
   const [expenseToDelete, setExpenseToDelete] = useState(null)
-
-  // --- HOOKS ---
   const { rawExpenses, isLoading } = useExpenses(dateRange)
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
   const { deleteExpense, isDeleting } = useDeleteExpense()
   const { categoryColors, categoryIcons } = useCategoryMaps()
-
-  // --- DATA PROCESSING PIPELINE ---
-
-  // 1. Apply user filters (search, category, etc.)
   const filteredTransactions = useMemo(() => {
     if (!rawExpenses) return []
     return rawExpenses.filter((tx) => {
       const { selectedCategories, amountRange, isSplitFilter } = filters
       const searchMatch = debouncedSearchTerm
-        ? tx.notes.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+        ? tx.notes?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
         : true
       const categoryMatch =
         selectedCategories.length > 0
@@ -96,19 +91,15 @@ const ExpensesPage = () => {
       return searchMatch && categoryMatch && amountMatch && splitMatch
     })
   }, [rawExpenses, filters, debouncedSearchTerm])
-
-  // 2. Add groupPosition info for visual stacking (replicating Dashboard logic)
   const transactionsWithGroupInfo = useMemo(() => {
     return filteredTransactions.map((tx, index, arr) => {
       const prevTx = arr[index - 1]
       const nextTx = arr[index + 1]
-
       const isFirstInGroup =
         tx.groupId && (!prevTx || prevTx.groupId !== tx.groupId)
       const isLastInGroup =
         tx.groupId && (!nextTx || nextTx.groupId !== tx.groupId)
       const isInGroup = tx.groupId && !isFirstInGroup && !isLastInGroup
-
       return {
         ...tx,
         groupPosition: isFirstInGroup
@@ -121,20 +112,26 @@ const ExpensesPage = () => {
       }
     })
   }, [filteredTransactions])
-
-  // 3. Calculate metrics based on the fully filtered list
   const metrics = useMemo(() => {
     const totalSpent = transactionsWithGroupInfo.reduce(
       (acc, tx) => acc + tx.totalAmount,
       0
     )
-    const totalTransactions = transactionsWithGroupInfo.length
+
+    const uniqueTransactionIds = new Set()
+    transactionsWithGroupInfo.forEach((tx) => {
+      if (tx.groupId) {
+        uniqueTransactionIds.add(tx.groupId)
+      } else {
+        uniqueTransactionIds.add(tx._id)
+      }
+    })
+    const totalTransactions = uniqueTransactionIds.size
+
     const days = differenceInDays(dateRange.endDate, dateRange.startDate) + 1
     const averageDailySpend = totalSpent / (days > 0 ? days : 1)
     return { totalSpent, totalTransactions, averageDailySpend }
   }, [transactionsWithGroupInfo, dateRange])
-
-  // 4. Calculate category breakdown
   const categoryBreakdown = useMemo(() => {
     const breakdown = transactionsWithGroupInfo.reduce((acc, tx) => {
       if (!acc[tx.category]) acc[tx.category] = 0
@@ -145,16 +142,11 @@ const ExpensesPage = () => {
       .map(([category, total]) => ({ category, total }))
       .sort((a, b) => b.total - a.total)
   }, [transactionsWithGroupInfo])
-
-  // 5. Paginate the fully processed list
   const paginatedTransactions = useMemo(() => {
     const limit = 25
     const start = (page - 1) * limit
-    // THE FIX: We now slice the list that has the group info
     return transactionsWithGroupInfo.slice(start, start + limit)
   }, [transactionsWithGroupInfo, page])
-
-  // 6. Calculate pagination details
   const pagination = useMemo(
     () => ({
       currentPage: page,
@@ -163,8 +155,6 @@ const ExpensesPage = () => {
     }),
     [transactionsWithGroupInfo, page]
   )
-
-  // 7. Group the final paginated list by date and add UI properties (icon, color, type)
   const groupedTransactions = useMemo(() => {
     return paginatedTransactions.reduce((acc, tx) => {
       const date = new Date(tx.date)
@@ -174,7 +164,6 @@ const ExpensesPage = () => {
         ? "Yesterday"
         : format(date, "MMMM d, yyyy")
       if (!acc[group]) acc[group] = []
-
       acc[group].push({
         ...tx,
         type: tx.category,
@@ -185,31 +174,28 @@ const ExpensesPage = () => {
       return acc
     }, {})
   }, [paginatedTransactions, categoryIcons, categoryColors])
-
-  // --- HANDLERS ---
   const handleFilterChange = (newFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }))
     setPage(1)
   }
   const handleApplyFilters = () => setFilterPanelOpen(false)
   const handleResetFilters = () => {
-    setFilters(defaultFilters);
-    setSearchTerm('');
-    setPage(1);
-    setDateRange({ // Add this part
-        startDate: new Date('1970-01-01'),
-        endDate: new Date(),
-        label: 'All Time',
-    });
-    setFilterPanelOpen(false);
-};
+    setFilters(defaultFilters)
+    setSearchTerm("")
+    setPage(1)
+    setDateRange({
+      startDate: new Date("1970-01-01"),
+      endDate: new Date(),
+      label: "All Time",
+    })
+    setFilterPanelOpen(false)
+  }
   const handleCategoryChartClick = (category) => {
     setFilters((prev) => ({ ...prev, selectedCategories: [category] }))
     setPage(1)
   }
-
   const activeFilterCount =
-    (dateRange.label !== 'All Time' ? 1 : 0) +
+    (dateRange.label !== "All Time" ? 1 : 0) +
     filters.selectedCategories.length +
     (filters.isSplitFilter !== null ? 1 : 0) +
     (filters.amountRange[0] > 0 || filters.amountRange[1] < 50000 ? 1 : 0)
@@ -218,7 +204,7 @@ const ExpensesPage = () => {
   return (
     <Box>
       {/* --- MOBILE LAYOUT --- */}
-      {isMobile && (
+      {isMobile ? (
         <Stack spacing={3}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <TextField
@@ -245,13 +231,11 @@ const ExpensesPage = () => {
               </IconButton>
             </Tooltip>
           </Box>
-
           <ExpenseSummaryCard
             metrics={metrics}
             categoryBreakdown={categoryBreakdown}
             isLoading={isLoading}
           />
-
           {filters.selectedCategories.length > 0 && (
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               {filters.selectedCategories.map((cat) => (
@@ -276,20 +260,21 @@ const ExpensesPage = () => {
               ))}
             </Box>
           )}
-
-          <FullTransactionList
-            groupedTransactions={groupedTransactions}
-            pagination={pagination}
-            isLoading={isLoading}
-            isFetching={false}
-            onPageChange={(event, newPage) => setPage(newPage)}
-            onTransactionClick={setSelectedTransaction}
-          />
+          {isLoading ? (
+            <Skeleton variant="rounded" height={500} />
+          ) : (
+            <FullTransactionList
+              groupedTransactions={groupedTransactions}
+              pagination={pagination}
+              isLoading={isLoading}
+              isFetching={false}
+              onPageChange={(event, newPage) => setPage(newPage)}
+              onTransactionClick={setSelectedTransaction}
+            />
+          )}
         </Stack>
-      )}
-
-      {/* --- DESKTOP LAYOUT --- */}
-      {!isMobile && (
+      ) : (
+        // --- DESKTOP LAYOUT ---
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           <div className="md:col-span-8">
             <Stack spacing={3}>
@@ -301,9 +286,12 @@ const ExpensesPage = () => {
                   gap: 1,
                   borderRadius: 3,
                   overflow: "hidden",
-                  borderColor: "divider",
+                  borderColor:
+                    theme.palette.mode === "dark"
+                      ? theme.palette.background.paper
+                      : theme.palette.divider,
                   height: 48,
-                  bgcolor: "rgba(200, 200, 200, 0.15)",
+                  bgcolor: "rgba(200,200,200,0.15)",
                 }}
               >
                 <TextField
@@ -330,7 +318,6 @@ const ExpensesPage = () => {
                     },
                   }}
                 />
-
                 <Tooltip title="Date & Advanced Filters">
                   <IconButton
                     onClick={() => setFilterPanelOpen(true)}
@@ -339,7 +326,10 @@ const ExpensesPage = () => {
                       height: "100%",
                       px: 1.5,
                       borderLeft: "1px solid",
-                      borderColor: "divider",
+                      borderColor:
+                        theme.palette.mode === "dark"
+                          ? theme.palette.background.paper
+                          : theme.palette.divider,
                       borderRadius: 0,
                       bgcolor: "rgba(200,200,200,0.2)",
                       "&:hover": { bgcolor: "rgba(200,200,200,0.3)" },
@@ -351,37 +341,49 @@ const ExpensesPage = () => {
                   </IconButton>
                 </Tooltip>
               </Paper>
-
-              <Grid container spacing={2.5}>
-                <Grid item xs={12} sm={4}>
-                  <MetricCard
-                    title="Total Spent"
-                    value={(metrics?.totalSpent || 0).toLocaleString("en-IN", {
-                      style: "currency",
-                      currency: "INR",
-                    })}
-                    isLoading={isLoading}
-                  />
+              {isLoading ? (
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} sm={4}>
+                    <Skeleton variant="rounded" height={88} />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Skeleton variant="rounded" height={88} />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Skeleton variant="rounded" height={88} />
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} sm={4}>
-                  <MetricCard
-                    title="Avg. Daily Spend"
-                    value={(metrics?.averageDailySpend || 0).toLocaleString(
-                      "en-IN",
-                      { style: "currency", currency: "INR" }
-                    )}
-                    isLoading={isLoading}
-                  />
+              ) : (
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} sm={4}>
+                    <MetricCard
+                      title="Total Spent"
+                      value={(metrics?.totalSpent || 0).toLocaleString(
+                        "en-IN",
+                        { style: "currency", currency: "INR" }
+                      )}
+                      isLoading={isLoading}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <MetricCard
+                      title="Avg. Daily Spend"
+                      value={(metrics?.averageDailySpend || 0).toLocaleString(
+                        "en-IN",
+                        { style: "currency", currency: "INR" }
+                      )}
+                      isLoading={isLoading}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <MetricCard
+                      title="Transactions"
+                      value={metrics?.totalTransactions || 0}
+                      isLoading={isLoading}
+                    />
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} sm={4}>
-                  <MetricCard
-                    title="Transactions"
-                    value={metrics?.totalTransactions || 0}
-                    isLoading={isLoading}
-                  />
-                </Grid>
-              </Grid>
-
+              )}
               {filters.selectedCategories.length > 0 && (
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                   {filters.selectedCategories.map((cat) => (
@@ -407,30 +409,35 @@ const ExpensesPage = () => {
                 </Box>
               )}
 
-              <FullTransactionList
-                groupedTransactions={groupedTransactions}
-                pagination={pagination}
-                isLoading={isLoading}
-                isFetching={false}
-                onPageChange={(event, newPage) => setPage(newPage)}
-                onTransactionClick={setSelectedTransaction}
-              />
+              {isLoading ? (
+                <Skeleton variant="rounded" height={600} />
+              ) : (
+                <FullTransactionList
+                  groupedTransactions={groupedTransactions}
+                  pagination={pagination}
+                  isLoading={isLoading}
+                  isFetching={false}
+                  onPageChange={(event, newPage) => setPage(newPage)}
+                  onTransactionClick={setSelectedTransaction}
+                />
+              )}
             </Stack>
           </div>
-
           <div className="md:col-span-4">
             <Box sx={{ position: "sticky", top: 100 }}>
-              <ExpenseBarChart
-                categoryBreakdown={categoryBreakdown}
-                onCategoryClick={handleCategoryChartClick}
-                isFetching={false}
-              />
+              {isLoading ? (
+                <Skeleton variant="rounded" height={400} />
+              ) : (
+                <ExpenseBarChart
+                  categoryBreakdown={categoryBreakdown}
+                  onCategoryClick={handleCategoryChartClick}
+                  isFetching={false}
+                />
+              )}
             </Box>
           </div>
         </div>
       )}
-
-      {/* --- FILTER PANEL --- */}
       <Modal
         open={isFilterPanelOpen}
         onClose={() => setFilterPanelOpen(false)}
@@ -485,8 +492,6 @@ const ExpensesPage = () => {
           </Box>
         </Slide>
       </Modal>
-
-      {/* --- MODALS --- */}
       <TransactionDetailModal
         transaction={selectedTransaction}
         open={Boolean(selectedTransaction)}
@@ -503,13 +508,11 @@ const ExpensesPage = () => {
           setSelectedTransaction(null)
         }}
       />
-
       <EditExpenseModal
         expense={expenseToEdit}
         open={Boolean(expenseToEdit)}
         onClose={() => setExpenseToEdit(null)}
       />
-
       <ConfirmationModal
         open={Boolean(expenseToDelete)}
         onClose={() => setExpenseToDelete(null)}

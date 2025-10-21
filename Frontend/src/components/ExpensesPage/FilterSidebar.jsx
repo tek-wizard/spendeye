@@ -283,11 +283,16 @@ export const FilterSidebar = React.memo(
       "& input[type=number]": { MozAppearance: "textfield" },
     }
 
-    return (
+        return (
       <>
         <Paper
           variant="outlined"
-          sx={{ width: 380, borderRadius: 4, overflow: "hidden" }}
+          sx={{ 
+            width: '100%', // Take up the full width of the parent modal/drawer
+            maxWidth: 380, // But don't grow larger than our ideal size
+            borderRadius: 4, 
+            overflow: "hidden" 
+          }}
         >
           <Stack
             sx={{
@@ -306,58 +311,25 @@ export const FilterSidebar = React.memo(
               <Accordion
                 expanded={expandedPanel === "date"}
                 onChange={handleAccordionChange("date")}
-                sx={{
-                  bgcolor: "transparent",
-                  boxShadow: "none",
-                  "&:before": { display: "none" },
-                }}
+                sx={{ bgcolor: "transparent", boxShadow: "none", "&:before": { display: "none" } }}
               >
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography sx={{ fontWeight: "medium", flexShrink: 0 }}>
-                    Date Range
-                  </Typography>
-                  <Typography
-                    sx={{
-                      color: "text.secondary",
-                      ml: "auto",
-                      mr: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {dateValue}
-                  </Typography>
+                  <Typography sx={{ fontWeight: "medium", flexShrink: 0 }}>Date Range</Typography>
+                  <Typography sx={{ color: "text.secondary", ml: "auto", mr: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dateValue}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={handleDateMenuClick}
-                    endIcon={<ArrowDropDownIcon />}
-                  >
-                    {dateRange.label}
-                  </Button>
+                  <Button fullWidth variant="outlined" onClick={handleDateMenuClick}>{dateRange.label}</Button>
                 </AccordionDetails>
               </Accordion>
+
               <Accordion
                 expanded={expandedPanel === "category"}
                 onChange={handleAccordionChange("category")}
-                sx={{
-                  bgcolor: "transparent",
-                  boxShadow: "none",
-                  "&:before": { display: "none" },
-                }}
+                sx={{ bgcolor: "transparent", boxShadow: "none", "&:before": { display: "none" } }}
               >
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography sx={{ fontWeight: "medium" }}>
-                    Category
-                  </Typography>
-                  <Typography
-                    sx={{ color: "text.secondary", ml: "auto", mr: 1 }}
-                  >
-                    {categoryValue}
-                  </Typography>
+                  <Typography sx={{ fontWeight: "medium" }}>Category</Typography>
+                  <Typography sx={{ color: "text.secondary", ml: "auto", mr: 1 }}>{categoryValue}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                   <FormGroup
@@ -369,8 +341,7 @@ export const FilterSidebar = React.memo(
                     }}
                   >
                     {allCategories.map((cat) => {
-                      const isSelected =
-                        filters.selectedCategories.includes(cat)
+                      const isSelected = filters.selectedCategories.includes(cat)
                       return (
                         <FormControlLabel
                           key={cat}
@@ -390,10 +361,7 @@ export const FilterSidebar = React.memo(
                               borderRadius: 4,
                               padding: "4px 12px",
                               cursor: "pointer",
-                              // Only apply hover if not selected
-                              "&:hover": !isSelected
-                                ? { bgcolor: "action.hover" }
-                                : {},
+                              "&:hover": !isSelected ? { bgcolor: "action.hover" } : {},
                               ...(isSelected && {
                                 bgcolor: "primary.main",
                                 color: "primary.contrastText",
@@ -407,35 +375,21 @@ export const FilterSidebar = React.memo(
                   </FormGroup>
                 </AccordionDetails>
               </Accordion>
+
               <Accordion
                 expanded={expandedPanel === "amount"}
                 onChange={handleAccordionChange("amount")}
-                sx={{
-                  bgcolor: "transparent",
-                  boxShadow: "none",
-                  "&:before": { display: "none" },
-                }}
+                sx={{ bgcolor: "transparent", boxShadow: "none", "&:before": { display: "none" } }}
               >
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography sx={{ fontWeight: "medium" }}>Amount</Typography>
-                  <Typography
-                    sx={{ color: "text.secondary", ml: "auto", mr: 1 }}
-                  >
-                    {amountValue}
-                  </Typography>
+                  <Typography sx={{ color: "text.secondary", ml: "auto", mr: 1 }}>{amountValue}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Box
-                    sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}
-                  >
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}>
                     {allPresets.map((preset) => {
-                      const isCustom =
-                        defaultPresets.findIndex(
-                          (p) => p.label === preset.label
-                        ) === -1
-                      const isSelected =
-                        JSON.stringify(filters.amountRange) ===
-                        JSON.stringify(preset.range)
+                      const isCustom = defaultPresets.findIndex(p => p.label === preset.label) === -1
+                      const isSelected = JSON.stringify(filters.amountRange) === JSON.stringify(preset.range)
                       return (
                         <Chip
                           key={preset.label}
@@ -443,21 +397,11 @@ export const FilterSidebar = React.memo(
                           onClick={() => onAmountChange(preset.range)}
                           variant={isSelected ? "filled" : "outlined"}
                           color="primary"
-                          onDelete={
-                            isCustom
-                              ? () => handleDeleteCustomPreset(preset)
-                              : undefined
-                          }
+                          onDelete={isCustom ? () => handleDeleteCustomPreset(preset) : undefined}
                         />
                       )
                     })}
-                    <Tooltip
-                      title={
-                        customPresets.length >= 5
-                          ? "Maximum of 5 custom presets reached"
-                          : ""
-                      }
-                    >
+                    <Tooltip title={customPresets.length >= 5 ? "Maximum of 5 custom presets reached" : ""}>
                       <span>
                         <Chip
                           label="Custom"
@@ -482,29 +426,19 @@ export const FilterSidebar = React.memo(
                     min={0}
                     max={50000}
                     step={500}
-                    marks={[
-                      { value: 10000, label: "10k" },
-                      { value: 25000, label: "25k" },
-                    ]}
+                    marks={[{ value: 10000, label: "10k" }, { value: 25000, label: "25k" }]}
                   />
                 </AccordionDetails>
               </Accordion>
+
               <Accordion
                 expanded={expandedPanel === "type"}
                 onChange={handleAccordionChange("type")}
-                sx={{
-                  bgcolor: "transparent",
-                  boxShadow: "none",
-                  "&:before": { display: "none" },
-                }}
+                sx={{ bgcolor: "transparent", boxShadow: "none", "&:before": { display: "none" } }}
               >
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography sx={{ fontWeight: "medium" }}>Type</Typography>
-                  <Typography
-                    sx={{ color: "text.secondary", ml: "auto", mr: 1 }}
-                  >
-                    {typeValue}
-                  </Typography>
+                  <Typography sx={{ color: "text.secondary", ml: "auto", mr: 1 }}>{typeValue}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                   <ToggleButtonGroup
@@ -521,37 +455,23 @@ export const FilterSidebar = React.memo(
                 </AccordionDetails>
               </Accordion>
             </Box>
+
             <Stack direction="row" spacing={2} sx={{ pt: 2, mt: "auto" }}>
-              <Button fullWidth variant="outlined" onClick={onReset}>
-                Reset
-              </Button>
-              <Button fullWidth variant="contained" onClick={onApply}>
-                Apply
-              </Button>
+              <Button fullWidth variant="outlined" onClick={onReset}>Reset</Button>
+              <Button fullWidth variant="contained" onClick={onApply}>Apply</Button>
             </Stack>
           </Stack>
         </Paper>
-        <Dialog
-          open={isAmountModalOpen}
-          onClose={() => setAmountModalOpen(false)}
-          maxWidth="xs"
-          fullWidth
-        >
-          <DialogTitle sx={{ fontWeight: "bold" }}>
-            Create Custom Range
-          </DialogTitle>
+
+        <Dialog open={isAmountModalOpen} onClose={() => setAmountModalOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ fontWeight: "bold" }}>Create Custom Range</DialogTitle>
           <form onSubmit={handleSubmit(onSaveCustomPreset)}>
             <DialogContent>
               <Stack spacing={2.5} sx={{ pt: 1 }}>
                 <Paper variant="outlined" sx={{ p: 2, textAlign: "center" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    PRESET PREVIEW
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">PRESET PREVIEW</Typography>
                   <Typography sx={{ fontWeight: "bold" }}>
-                    {generateAmountLabel(
-                      newPresetWatchedRange.min,
-                      newPresetWatchedRange.max
-                    )}
+                    {generateAmountLabel(newPresetWatchedRange.min, newPresetWatchedRange.max)}
                   </Typography>
                 </Paper>
                 <Slider
@@ -572,11 +492,7 @@ export const FilterSidebar = React.memo(
                     {...register("min", { valueAsNumber: true })}
                     error={!!errors.min}
                     helperText={errors.min?.message}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">₹</InputAdornment>
-                      ),
-                    }}
+                    InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
                     sx={numberInputSx}
                   />
                   <TextField
@@ -585,11 +501,7 @@ export const FilterSidebar = React.memo(
                     {...register("max", { valueAsNumber: true })}
                     error={!!errors.max}
                     helperText={errors.max?.message}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">₹</InputAdornment>
-                      ),
-                    }}
+                    InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
                     sx={numberInputSx}
                   />
                 </Stack>
@@ -597,21 +509,14 @@ export const FilterSidebar = React.memo(
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
               <Button onClick={() => setAmountModalOpen(false)}>Cancel</Button>
-              <Button type="submit" variant="contained">
-                Save Preset
-              </Button>
+              <Button type="submit" variant="contained">Save Preset</Button>
             </DialogActions>
           </form>
         </Dialog>
 
-        {/* Date Picker */}
-        <DatePickerMenu
-          anchorEl={dateAnchorEl}
-          onClose={handleDateMenuClose}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-        />
+        <DatePickerMenu anchorEl={dateAnchorEl} onClose={handleDateMenuClose} dateRange={dateRange} setDateRange={setDateRange} />
       </>
     )
+
   }
 )

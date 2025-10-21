@@ -158,142 +158,92 @@ export const DatePickerMenu = ({
       }}
     >
       <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <Stack>
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-            <Typography
-              sx={{
-                fontWeight: "bold",
-                minHeight: 24,
-                fontSize: { xs: "0.8rem", sm: "0.9rem", md: "1rem" },
-                whiteSpace: "nowrap",
-              }}
-            >
-              {getHeaderText()}
-            </Typography>
-          </Box>
+            {/* THE DEFINITIVE FIX: This Stack now controls the fixed header/footer and scrollable content */}
+            <Stack sx={{ height: { xs: '85vh', sm: 'auto' }, maxHeight: 700 }}>
+                {/* --- HEADER: Shows the live selected range (Fixed) --- */}
+                <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                    <Typography sx={{ fontWeight: 'bold', minHeight: 24, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                        {getHeaderText()}
+                    </Typography>
+                </Box>
 
-          <Box
-            sx={{ display: "flex", flexDirection: isMobile ? "column" : "row" }}
-          >
-            {/* PRESETS */}
-            <Stack
-              spacing={1}
-              sx={{
-                p: 2,
-                borderRight: isMobile ? 0 : 1,
-                borderBottom: isMobile ? 1 : 0,
-                borderColor: "divider",
-                minWidth: 150,
-              }}
-            >
-              {datePresets.map((p) => (
-                <Button
-                  key={p.label}
-                  variant={selectedPreset === p.label ? "contained" : "text"}
-                  onClick={() => setTempDateRange(p.range)}
-                  sx={{ justifyContent: "flex-start" }}
-                >
-                  {p.label}
-                </Button>
-              ))}
+                {/* --- SCROLLABLE CONTENT AREA --- */}
+                <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', flexGrow: 1, overflowY: 'auto' }}>
+                    {/* Presets Section */}
+                    <Stack spacing={1} sx={{ p: 2, borderRight: isMobile ? 0 : 1, borderBottom: isMobile ? 1 : 0, borderColor: 'divider', minWidth: 150 }}>
+                        {datePresets.map(p => (
+                            <Button 
+                                key={p.label}
+                                variant={selectedPreset === p.label ? "contained" : "text"}
+                                onClick={() => setTempDateRange(p.range)}
+                                sx={{ justifyContent: 'flex-start' }}
+                            >
+                                {p.label}
+                            </Button>
+                        ))}
+                    </Stack>
+
+                    {/* Calendars Section */}
+                    <Box sx={{ display: 'flex', p: isMobile ? 1 : 0 }}>
+                        {isMobile ? (
+                            <DateCalendar 
+                                value={start}
+                                onChange={handleDateChangeMobile}
+                                slots={{ day: CustomDay }}
+                                disableFuture
+                            />
+                        ) : (
+                            <>
+                                <Box sx={{ p: 2 }}>
+                                    <Typography variant="subtitle2" sx={{ textAlign: "center", mb: 1 }}>Start Date</Typography>
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", textAlign: "center", mb: 1, minHeight: 30 }}>
+                                      {start && !end ? "Select an end date to complete" : "Select the first day of your range"}
+                                    </Typography>
+                                    <DateCalendar
+                                      value={start || new Date()}
+                                      onChange={handleStartChange}
+                                      month={visibleMonths[0]}
+                                      onMonthChange={(date) => {
+                                        const newStartMonth = date
+                                        const newEndMonth = isSameMonth(date, visibleMonths[1]) ? addMonths(date, 1) : visibleMonths[1]
+                                        setVisibleMonths([newStartMonth, newEndMonth])
+                                      }}
+                                      slots={{ day: CustomDay }}
+                                      disableFuture
+                                    />
+                                </Box>
+                                <Divider orientation="vertical" flexItem />
+                                <Box sx={{ p: 2 }}>
+                                    <Typography variant="subtitle2" sx={{ textAlign: "center", mb: 1 }}>End Date</Typography>
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", textAlign: "center", mb: 1, minHeight: 30 }}>
+                                      {start && !end ? "Or click a day to finish" : "Select the last day of your range"}
+                                    </Typography>
+                                    <DateCalendar
+                                      value={end || start || new Date()}
+                                      onChange={handleEndChange}
+                                      month={visibleMonths[1]}
+                                      onMonthChange={(date) => {
+                                        const newEndMonth = date
+                                        const newStartMonth = isSameMonth(date, visibleMonths[0]) ? subMonths(date, 1) : visibleMonths[0]
+                                        setVisibleMonths([newStartMonth, newEndMonth])
+                                      }}
+                                      slots={{ day: CustomDay }}
+                                      disableFuture
+                                    />
+                                </Box>
+                            </>
+                        )}
+                    </Box>
+                </Box>
+
+                {/* --- FOOTER: Action Buttons (Fixed) --- */}
+                <Divider />
+                <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ p: 2 }}>
+                    <Button onClick={onClose}>Cancel</Button>
+                    <Button onClick={handleApply} variant="contained" disabled={!start || !end}>Apply</Button>
+                </Stack>
             </Stack>
-
-            {/* CALENDARS */}
-            <Box sx={{ display: "flex", p: isMobile ? 1 : 0 }}>
-              {isMobile ? (
-                <DateCalendar
-                  value={start}
-                  onChange={handleDateChangeMobile}
-                  slots={{ day: CustomDay }}
-                  disableFuture
-                />
-              ) : (
-                <>
-                  <Box sx={{ p: 2 }}>
-                    <Typography variant="subtitle2" sx={{ textAlign: "center", mb: 1 }}>
-                      Start Date
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{
-                        display: "block",
-                        textAlign: "center",
-                        mb: 1,
-                        minHeight: 30,
-                      }}
-                    >
-                      {start && !end
-                        ? "Select an end date to complete"
-                        : "Select the first day of your range"}
-                    </Typography>
-                    <DateCalendar
-                      value={start || new Date()}
-                      onChange={handleStartChange}
-                      month={visibleMonths[0]}
-                      onMonthChange={(date) => {
-                        const newStartMonth = date
-                        const newEndMonth = isSameMonth(date, visibleMonths[1])
-                          ? addMonths(date, 1)
-                          : visibleMonths[1]
-                        setVisibleMonths([newStartMonth, newEndMonth])
-                      }}
-                      slots={{ day: CustomDay }}
-                      disableFuture
-                    />
-                  </Box>
-                  <Divider orientation="vertical" flexItem />
-                  <Box sx={{ p: 2 }}>
-                    <Typography variant="subtitle2" sx={{ textAlign: "center", mb: 1 }}>
-                      End Date
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{
-                        display: "block",
-                        textAlign: "center",
-                        mb: 1,
-                        minHeight: 30,
-                      }}
-                    >
-                      {start && !end
-                        ? "Or click a day to finish"
-                        : "Select the last day of your range"}
-                    </Typography>
-                    <DateCalendar
-                      value={end || start || new Date()}
-                      onChange={handleEndChange}
-                      month={visibleMonths[1]}
-                      onMonthChange={(date) => {
-                        const newEndMonth = date
-                        const newStartMonth = isSameMonth(date, visibleMonths[0])
-                          ? subMonths(date, 1)
-                          : visibleMonths[0]
-                        setVisibleMonths([newStartMonth, newEndMonth])
-                      }}
-                      slots={{ day: CustomDay }}
-                      disableFuture
-                    />
-                  </Box>
-                </>
-              )}
-            </Box>
-          </Box>
-
-          <Divider />
-          <Stack direction="row" justifyContent="flex-end" spacing={2} sx={{ p: 2 }}>
-            <Button onClick={onClose}>Cancel</Button>
-            <Button
-              onClick={handleApply}
-              variant="contained"
-              disabled={!start || !end}
-            >
-              Apply
-            </Button>
-          </Stack>
-        </Stack>
-      </LocalizationProvider>
+          </LocalizationProvider>
     </Menu>
   )
 }

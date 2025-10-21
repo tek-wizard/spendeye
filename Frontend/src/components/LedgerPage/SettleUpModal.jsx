@@ -64,26 +64,27 @@ export const SettleUpModal = ({ open, onClose, person }) => {
       {/* --- Content --- */}
       <DialogContent sx={{ p: 3, pt: 5 }}>
         <Stack spacing={3} alignItems="center" textAlign="center">
-          {/* --- Heading --- */}
+          {/* --- Heading (Slightly Smaller) --- */}
           <Typography
-            variant="h5"
+            variant="subtitle1"
+            color="text.secondary"
             sx={{
-              fontWeight: "bold",
+              fontWeight: 500,
               textAlign: "center",
-              mb: -0.5,
             }}
           >
             {owesYou
               ? "Confirm Receiving This Amount From"
               : "Confirm Paying This Amount To"}
           </Typography>
-
-          {/* --- Subheading --- */}
+          
+          {/* --- Name (Prominent) --- */}
           <Typography
-            variant="subtitle1"
-            color="text.secondary"
+            variant="h5"
             sx={{
-              fontWeight: 500,
+              fontWeight: "bold",
+              textAlign: "center",
+              mb: -0.5,
               wordBreak: "break-word",
               whiteSpace: "normal",
               maxWidth: "100%",
@@ -134,7 +135,7 @@ export const SettleUpModal = ({ open, onClose, person }) => {
           {isCreating ? (
             <CircularProgress size={24} color="inherit" />
           ) : owesYou ? (
-            "Confirm Received" 
+            "Confirm Received"
           ) : (
             "Confirm Paid"
           )}
