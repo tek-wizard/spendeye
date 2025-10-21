@@ -1,4 +1,3 @@
-// ✅ 1. Import useRef and useEffect from React
 import React, { useRef, useEffect } from 'react';
 import { Paper, Stack, IconButton, TextField, InputAdornment, Chip, Tooltip } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -17,16 +16,13 @@ export const QuickEntryPanel = ({
   onReset,
   entryType,
 }) => {
-  // ✅ 2. Create a ref to hold the input element
   const noteInputRef = useRef(null);
 
-  // ✅ 3. Add a useEffect to focus the input when the stage changes to 'note'
   useEffect(() => {
     if (stage === 'note' && noteInputRef.current) {
-      // Use a timeout to ensure the element is focusable after the render
       setTimeout(() => noteInputRef.current.focus(), 0);
     }
-  }, [stage]); // This effect runs whenever the 'stage' prop changes
+  }, [stage])
 
   const handleAmountChange = (e) => {
     const value = e.target.value;
@@ -73,9 +69,7 @@ export const QuickEntryPanel = ({
           value={stage === 'amount' ? amount : note}
           onChange={stage === 'amount' ? handleAmountChange : (e) => setNote(e.target.value)}
           onKeyDown={handleKeyDown}
-          // ✅ 4. Attach the ref to the TextField's input element
           inputRef={stage === 'note' ? noteInputRef : null}
-          // The autoFocus prop can now be removed as we control focus manually
           InputProps={{
             disableUnderline: true,
             startAdornment:

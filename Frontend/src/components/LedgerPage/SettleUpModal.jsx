@@ -78,7 +78,7 @@ export const SettleUpModal = ({ open, onClose, person }) => {
               : "Confirm Paying This Amount To"}
           </Typography>
 
-          {/* --- Subheading (Name, wraps gracefully) --- */}
+          {/* --- Subheading --- */}
           <Typography
             variant="subtitle1"
             color="text.secondary"

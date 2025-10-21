@@ -40,6 +40,7 @@ export const TransactionBubble = ({ transaction, isFirstInGroup, isLastInGroup }
         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
           {transaction.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
         </Typography>
+
         {transaction.notes && (
           <Typography 
             variant="body2" 
@@ -53,11 +54,12 @@ export const TransactionBubble = ({ transaction, isFirstInGroup, isLastInGroup }
             {transaction.notes}
           </Typography>
         )}
+
         <Typography
           variant="caption"
           sx={{ display: 'block', textAlign: 'right', mt: 1, opacity: isSent ? 0.8 : 0.6 }}
         >
-          {format(new Date(transaction.date), 'MMM d, yyyy')}
+          {format(new Date(transaction.date), 'p')}
         </Typography>
       </Paper>
     </Stack>

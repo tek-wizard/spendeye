@@ -26,7 +26,6 @@ import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline"
 import FilterListIcon from "@mui/icons-material/FilterList"
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted"
 
-// --- WHATSAPP-STYLE STATUS DOT BADGE ---
 const StatusBadge = styled(Badge)(({ theme, ownerState }) => ({
   "& .MuiBadge-badge": {
     backgroundColor:

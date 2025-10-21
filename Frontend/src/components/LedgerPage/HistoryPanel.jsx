@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -10,18 +10,19 @@ import {
   Divider,
   Tooltip,
   Chip,
-} from "@mui/material"
-import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"
-import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined"
-import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined"
-import { useLedgerHistory } from "../../hooks/useLedgerHistory"
-import { useCreateLedgerEntry } from "../../hooks/useCreateLedgerEntry"
-import { TransactionBubble } from "./TransactionBubble"
-import { SettleUpModal } from "./SettleUpModal"
-import { QuickEntryPanel } from "./QuickEntryPanel"
-import { NotificationModal } from "../NotificationModal" // THE FIX: Import the notification modal
-import { format, isSameDay } from "date-fns"
-import { toast } from "sonner"
+} from "@mui/material";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
+import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined";
+import { useLedgerHistory } from "../../hooks/useLedgerHistory";
+import { useCreateLedgerEntry } from "../../hooks/useCreateLedgerEntry";
+import { TransactionBubble } from "./TransactionBubble";
+import { GroupedTransactionCard } from "./GroupedTransactionCard"; // ✅ NEW
+import { SettleUpModal } from "./SettleUpModal";
+import { QuickEntryPanel } from "./QuickEntryPanel";
+import { NotificationModal } from "../NotificationModal";
+import { format, isSameDay } from "date-fns";
+import { toast } from "sonner";
 
 const EmptyState = () => (
   <Stack
@@ -43,60 +44,86 @@ const EmptyState = () => (
       Choose someone from the list to view your financial history with them.
     </Typography>
   </Stack>
-)
+);
 
 export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
-  const [isSettleModalOpen, setSettleModalOpen] = useState(false)
-  const { data: history, isLoading } = useLedgerHistory(selectedPerson?.person)
-  const { createLedgerEntry, isCreating } = useCreateLedgerEntry()
-  const chatBodyRef = useRef(null)
+  const [isSettleModalOpen, setSettleModalOpen] = useState(false);
+  const { data: history, isLoading } = useLedgerHistory(selectedPerson?.person);
+  const { createLedgerEntry, isCreating } = useCreateLedgerEntry();
+  const chatBodyRef = useRef(null);
 
   // --- State for Quick Entry & Notification ---
-  const [entryStage, setEntryStage] = useState("amount")
-  const [entryAmount, setEntryAmount] = useState("")
-  const [entryNote, setEntryNote] = useState("")
-  const [entryType, setEntryType] = useState(null)
-  const [notification, setNotification] = useState({ open: false, title: '', message: '', items: [] });
+  const [entryStage, setEntryStage] = useState("amount");
+  const [entryAmount, setEntryAmount] = useState("");
+  const [entryNote, setEntryNote] = useState("");
+  const [entryType, setEntryType] = useState(null);
+  const [notification, setNotification] = useState({
+    open: false,
+    title: "",
+    message: "",
+    items: [],
+  });
 
   // --- Scroll to bottom when history updates ---
   useEffect(() => {
     if (chatBodyRef.current) {
-      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
     }
-  }, [history])
+  }, [history]);
 
-  // --- Group transactions by date and direction ---
+  // --- GROUP-AWARE chat item builder ---
   const chatItems = useMemo(() => {
-    if (!history) return []
+    if (!history) return [];
 
-    const isSent = (type) => type === "Lent" || type === "Paid Back"
-    const items = []
-    let lastDate = null
+    const items = [];
+    let lastDate = null;
+    const processedGroupIds = new Set();
 
     history.forEach((tx, index) => {
-      const txDate = new Date(tx.date)
-      const prevTx = history[index - 1]
-      const nextTx = history[index + 1]
+      // skip already processed grouped entries
+      if (tx.groupId && processedGroupIds.has(tx.groupId.toString())) return;
+
+      const txDate = new Date(tx.date);
 
       if (!lastDate || !isSameDay(lastDate, txDate)) {
-        items.push({ type: "date_marker", id: `date-${tx._id}`, date: tx.date })
+        items.push({ type: "date_marker", id: `date-${tx._id}`, date: tx.date });
       }
 
-      const isFirstInGroup =
-        !prevTx ||
-        isSent(prevTx.type) !== isSent(tx.type) ||
-        !isSameDay(new Date(prevTx.date), txDate)
-      const isLastInGroup =
-        !nextTx ||
-        isSent(nextTx.type) !== isSent(tx.type) ||
-        !isSameDay(new Date(nextTx.date), txDate)
+      // --- GROUPED TRANSACTION ---
+      if (tx.groupId) {
+        const groupTransactions = history.filter(
+          (h) => h.groupId?.toString() === tx.groupId.toString()
+        );
+        items.push({
+          type: "grouped_transaction",
+          id: tx.groupId.toString(),
+          date: tx.date,
+          transactions: groupTransactions,
+        });
+        processedGroupIds.add(tx.groupId.toString());
+      } else {
+        // --- NORMAL TRANSACTION ---
+        const prevTx = history[index - 1];
+        const nextTx = history[index + 1];
+        const isSent = (type) => type === "Lent" || type === "Paid Back";
 
-      items.push({ ...tx, isFirstInGroup, isLastInGroup })
-      lastDate = txDate
-    })
+        const isFirstInGroup =
+          !prevTx ||
+          isSent(prevTx.type) !== isSent(tx.type) ||
+          !isSameDay(new Date(prevTx.date), txDate);
+        const isLastInGroup =
+          !nextTx ||
+          isSent(nextTx.type) !== isSent(tx.type) ||
+          !isSameDay(new Date(nextTx.date), txDate);
 
-    return items
-  }, [history])
+        items.push({ ...tx, isFirstInGroup, isLastInGroup });
+      }
+
+      lastDate = txDate;
+    });
+
+    return items;
+  }, [history]);
 
   // --- Loading Skeleton ---
   if (isLoading) {
@@ -113,7 +140,7 @@ export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
           <Skeleton variant="rounded" height={80} />
         </Stack>
       </Paper>
-    )
+    );
   }
 
   // --- Empty state ---
@@ -125,29 +152,29 @@ export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
       >
         <EmptyState />
       </Paper>
-    )
+    );
   }
 
-  const { person, netBalance } = selectedPerson
-  const owesYou = netBalance > 0
+  const { person, netBalance } = selectedPerson;
+  const owesYou = netBalance > 0;
 
   // --- Reset Entry ---
   const handleResetEntry = () => {
-    setEntryStage("amount")
-    setEntryAmount("")
-    setEntryNote("")
-    setEntryType(null)
-  }
+    setEntryStage("amount");
+    setEntryAmount("");
+    setEntryNote("");
+    setEntryType(null);
+  };
 
   // --- Confirm Amount Stage ---
   const handleAmountConfirm = (type) => {
-    setEntryType(type)
-    setEntryStage("note")
-  }
+    setEntryType(type);
+    setEntryStage("note");
+  };
 
   // --- Commit Entry to Backend ---
   const handleCommitEntry = () => {
-    if (isCreating) return
+    if (isCreating) return;
 
     const ledgerEntryData = {
       person: person,
@@ -155,18 +182,19 @@ export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
       type: entryType,
       notes: entryNote.trim(),
       date: new Date(),
-    }
+    };
 
     createLedgerEntry(ledgerEntryData, {
       onSuccess: (data) => {
-        handleResetEntry()
+        handleResetEntry();
 
         const createdItems = data.createdExpenses || data.createdLedgers || [];
         if (createdItems.length > 1) {
           setNotification({
             open: true,
-            title: 'Transaction Processed!',
-            message: 'Your payment was automatically split into the following entries for accuracy:',
+            title: "Transaction Processed!",
+            message:
+              "Your payment was automatically split into the following entries for accuracy:",
             items: createdItems,
           });
         } else {
@@ -174,10 +202,10 @@ export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
         }
       },
       onError: () => {
-        toast.error("Failed to add transaction.")
+        toast.error("Failed to add transaction.");
       },
-    })
-  }
+    });
+  };
 
   return (
     <>
@@ -267,28 +295,38 @@ export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
         {/* --- CHAT BODY --- */}
         <Box ref={chatBodyRef} sx={{ flexGrow: 1, overflowY: "auto", p: 2 }}>
           {chatItems.length > 0 ? (
-            chatItems.map((item) =>
-              item.type === "date_marker" ? (
-                <Chip
-                  key={item.id}
-                  label={format(new Date(item.date), "MMMM d, yyyy")}
-                  sx={{
-                    display: "flex",
-                    mx: "auto",
-                    my: 2,
-                    bgcolor: "action.hover",
-                    background: "transparent",
-                  }}
-                />
-              ) : (
+            chatItems.map((item) => {
+              if (item.type === "date_marker") {
+                return (
+                  <Chip
+                    key={item.id}
+                    label={format(new Date(item.date), "MMMM d, yyyy")}
+                    sx={{
+                      display: "flex",
+                      mx: "auto",
+                      my: 2,
+                      bgcolor: "action.hover",
+                      background: "transparent",
+                    }}
+                  />
+                );
+              }
+
+              if (item.type === "grouped_transaction") {
+                return (
+                  <GroupedTransactionCard key={item.id} group={item} />
+                );
+              }
+
+              return (
                 <TransactionBubble
                   key={item._id}
                   transaction={item}
                   isFirstInGroup={item.isFirstInGroup}
                   isLastInGroup={item.isLastInGroup}
                 />
-              )
-            )
+              );
+            })
           ) : (
             <Box sx={{ textAlign: "center", p: 4, color: "text.secondary" }}>
               <Typography sx={{ wordBreak: "break-word" }}>
@@ -329,8 +367,7 @@ export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
         person={selectedPerson}
       />
 
-      {/* THE FIX: Add the NotificationModal to the component's render */}
-      <NotificationModal 
+      <NotificationModal
         open={notification.open}
         onClose={() => setNotification({ ...notification, open: false })}
         title={notification.title}
@@ -338,5 +375,5 @@ export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
         createdItems={notification.items}
       />
     </>
-  )
-}
+  );
+};
