@@ -17,13 +17,13 @@ export const useCreateLedgerEntry = () => {
     onSuccess: (data) => {
       toast.success(data.message || "Ledger entry created!");
       
-      // After creating an entry, our summaries are out of date.
-      // Invalidate them to trigger an automatic refetch.
       queryClient.invalidateQueries({ queryKey: ['ledgerSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['debtors'] }); 
       queryClient.invalidateQueries({ queryKey: ['creditors'] });
+      queryClient.invalidateQueries({ queryKey: ['ledgerPeople'] });
+      queryClient.invalidateQueries({ queryKey: ['ledgerHistory'] });
 
     },
     onError: (err) => {

@@ -43,7 +43,7 @@ export const handleAddContact = async (req, res) => {
       })
     }
 
-    if (user.contacts.find((contact) => contact.name === contactName)) {
+    if (user.contacts.find((contact) => contact.name.toLowerCase() === contactName.toLowerCase())) {
       return res.status(400).json({
         success: false,
         message: "Contact name already present",

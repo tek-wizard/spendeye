@@ -1,16 +1,17 @@
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { Toaster } from "sonner";
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// Import Pages and Components
+// --- Pages & Components ---
 import { AuthPage } from "./pages/AuthPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import MainLayout from "./pages/MainLayout"; // New
+import MainLayout from "./pages/MainLayout";
 import DashboardPage from "./pages/DashboardPage";
-import ExpensesPage from "./pages/ExpensesPage"; // New
-import LedgerPage from "./pages/LedgerPage";   // New
-import InsightsPage from "./pages/InsightsPage"; // New
+import ExpensesPage from "./pages/ExpensesPage";
+import LedgerPage from "./pages/LedgerPage";
+import LedgerHistoryPage from "./pages/LedgerHistoryPage";
+import InsightsPage from "./pages/InsightsPage";
 
 function App() {
   return (
@@ -18,10 +19,10 @@ function App() {
       <Toaster richColors position="top-right" />
       <BrowserRouter>
         <Routes>
-          {/* Public Route for Login/Signup */}
+          {/* --- Public Route (Auth) --- */}
           <Route path="/auth" element={<AuthPage />} />
 
-          {/* Protected Route now wraps our Main Layout */}
+          {/* --- Protected Routes --- */}
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
               <Route path="/" element={<DashboardPage />} />
@@ -29,6 +30,8 @@ function App() {
               <Route path="/ledger" element={<LedgerPage />} />
               <Route path="/insights" element={<InsightsPage />} />
             </Route>
+
+            <Route path="/ledger/:personName" element={<LedgerHistoryPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

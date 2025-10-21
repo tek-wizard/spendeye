@@ -9,12 +9,14 @@ export const useDeleteExpense = () => {
     mutationFn: deleteExpenseAPI,
     onSuccess: () => {
       toast.success("Expense deleted successfully!");
-      // After a deletion, all our summary data is stale. Refetch everything.
+      
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
       queryClient.invalidateQueries({ queryKey: ['ledgerSummary'] });
       queryClient.invalidateQueries({ queryKey: ['debtors'] });
       queryClient.invalidateQueries({ queryKey: ['creditors'] });
+      queryClient.invalidateQueries({ queryKey: ['ledgerPeople'] });
+      queryClient.invalidateQueries({ queryKey: ['ledgerHistory'] });
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || 'Failed to delete expense');

@@ -1,6 +1,6 @@
 import express from "express"
 import { authMiddleware } from "../middlewares/auth.middleware.js"
-import { handleCreateLedger,handleLedgerSummary,handleLedgerRetrieval,handleLedgerDebtorsRetrieval,handleLedgerCreditorsRetrieval,handleLedgerSettlement,handleDeleteLedger } from "../controllers/ledger.controller.js"
+import { handleCreateLedger,handleLedgerSummary,handleLedgerRetrieval,handleLedgerDebtorsRetrieval,handleLedgerCreditorsRetrieval,handleLedgerSettlement,handleDeleteLedger,getPeopleSummary, getHistoryByPerson, } from "../controllers/ledger.controller.js"
 
 const router = express.Router()
 
@@ -11,5 +11,7 @@ router.get("/",authMiddleware, handleLedgerRetrieval)
 router.get("/debtors",authMiddleware, handleLedgerDebtorsRetrieval)
 router.get("/creditors",authMiddleware, handleLedgerCreditorsRetrieval)
 router.delete("/:id",authMiddleware,handleDeleteLedger)
+router.get("/people", authMiddleware, getPeopleSummary);
+router.get("/history/:personName", authMiddleware, getHistoryByPerson);
 
 export default router
