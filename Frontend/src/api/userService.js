@@ -10,3 +10,14 @@ export const addContactAPI = async (contactData) => {
   const { data } = await api.patch('/users/contacts/add', contactData);
   return data;
 };
+
+export const updateBudgetAPI = async (budgetData) => {
+  // The backend expects an object like { budget: 50000 }
+  const { data } = await api.patch('/users/budget', budgetData);
+  return data;
+};
+
+export const updateProfileAPI = async (profileData) => {
+  const { data } = await api.patch('/users/profile', profileData);
+  return data;
+};

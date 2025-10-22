@@ -34,10 +34,9 @@ const UserSchema = mongoose.Schema(
         }
       }
     ],
-    groupId: {
-      type: mongoose.Schema.Types.ObjectId,
-      index: true,
-    }
+    budgetLastUpdated: {
+      type: Date,
+    },
   },
   { timestamps: true }
 )

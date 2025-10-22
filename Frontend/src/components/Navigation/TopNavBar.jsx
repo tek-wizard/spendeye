@@ -1,4 +1,3 @@
-// src/components/Navigation/TopNavBar.jsx
 import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Button, Avatar, Box, useTheme, IconButton, Tooltip } from '@mui/material';
 import { motion } from 'framer-motion';
@@ -10,7 +9,7 @@ const navItems = [
   { label: 'Insights', path: '/insights', id: 'insights' },
 ];
 
-export const TopNavBar = ({ activeTab, onNavigate, onAvatarClick }) => {
+export const TopNavBar = ({ activeTab, onNavigate, onAvatarClick, isSettingsPage }) => {
   const theme = useTheme();
   const [scrolled, setScrolled] = useState(false);
 
@@ -44,7 +43,12 @@ export const TopNavBar = ({ activeTab, onNavigate, onAvatarClick }) => {
         </Box>
         <Tooltip title="Account Settings">
           <IconButton onClick={onAvatarClick} sx={{ p: 0 }}>
-            <Avatar alt="User" />
+            <motion.div
+              animate={{ rotate: isSettingsPage ? -25 : 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 40 }}
+            >
+              <Avatar alt="User" />
+            </motion.div>
           </IconButton>
         </Tooltip>
       </Toolbar>

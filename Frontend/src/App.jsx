@@ -12,6 +12,7 @@ import ExpensesPage from "./pages/ExpensesPage";
 import LedgerPage from "./pages/LedgerPage";
 import LedgerHistoryPage from "./pages/LedgerHistoryPage";
 import InsightsPage from "./pages/InsightsPage";
+import SettingsPage from "./pages/SettingsPage";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/ledger" element={<LedgerPage />} />
               <Route path="/insights" element={<InsightsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
 
             <Route path="/ledger/:personName" element={<LedgerHistoryPage />} />

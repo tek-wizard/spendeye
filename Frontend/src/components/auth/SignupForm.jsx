@@ -64,7 +64,6 @@ export const SignupForm = ({ onToggle }) => {
   const strength = checkPasswordStrength(password)
 
   const onSubmit = async (data) => {
-    console.log("from signup form",data)
     registerUser(data);
   }
 

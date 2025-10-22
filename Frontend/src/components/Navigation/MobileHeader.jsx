@@ -1,7 +1,8 @@
 import React from 'react';
 import { Box, Typography, Avatar, IconButton, ButtonBase } from '@mui/material';
+import { motion } from 'framer-motion';
 
-export const MobileHeader = ({ onTitleClick, onAvatarClick }) => {
+export const MobileHeader = ({ onTitleClick, onAvatarClick, isSettingsPage }) => {
   return (
     <Box 
       sx={{ 
@@ -17,7 +18,12 @@ export const MobileHeader = ({ onTitleClick, onAvatarClick }) => {
         </Typography>
       </ButtonBase>
       <IconButton onClick={onAvatarClick} sx={{ p: 0 }}>
-        <Avatar alt="User" />
+        <motion.div
+          animate={{ rotate: isSettingsPage ? -25 : 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 40 }}
+        >
+          <Avatar alt="User" />
+        </motion.div>
       </IconButton>
     </Box>
   );
