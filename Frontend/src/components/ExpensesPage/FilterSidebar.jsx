@@ -107,19 +107,6 @@ export const FilterSidebar = React.memo(
     const handleDateMenuClick = (event) => setDateAnchorEl(event.currentTarget)
     const handleDateMenuClose = () => setDateAnchorEl(null)
 
-    // const handleDateApply = () => {
-    //     const [start, end] = tempDateRange;
-    //     if (!start || !end) return; // Prevent applying an incomplete range
-
-    //     const isCustom = !datePresets.some(p => isSameDay(p.startDate, start) && isSameDay(p.endDate, end));
-    //     const label = isCustom
-    //         ? `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`
-    //         : datePresets.find(p => isSameDay(p.startDate, start))?.label || 'Custom';
-
-    //     setDateRange({ label, startDate: start, endDate: end });
-    //     handleDateMenuClose();
-    // };
-
     // --- STATE & LOGIC FOR CUSTOM AMOUNT PRESETS ---
     const [isAmountModalOpen, setAmountModalOpen] = useState(false)
     const [customPresets, setCustomPresets] = useState(getCustomPresets)
@@ -288,8 +275,8 @@ export const FilterSidebar = React.memo(
         <Paper
           variant="outlined"
           sx={{ 
-            width: '100%', // Take up the full width of the parent modal/drawer
-            maxWidth: 380, // But don't grow larger than our ideal size
+            width: '100%', 
+            maxWidth: 380,
             borderRadius: 4, 
             overflow: "hidden" 
           }}

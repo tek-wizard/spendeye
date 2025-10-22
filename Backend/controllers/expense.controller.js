@@ -2,6 +2,7 @@ import Expense from "../models/expense.model.js"
 import Ledger from "../models/ledger.model.js"
 import mongoose from "mongoose"
 import User from "../models/user.model.js"
+import { startOfMonth, endOfMonth, format,subMonths } from 'date-fns';
 
 export const handleExpenseCreation = async (req, res) => {
   try {
@@ -398,5 +399,93 @@ export const getAnalyzedExpenses = async (req, res) => {
       message: "An error occurred while analyzing expenses.",
       error: error.message,
     });
+  }
+};
+
+
+export const getMonthlyStory = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user._id);
+    const monthQuery = req.query.month ? new Date(req.query.month) : new Date();
+    
+    const startDate = startOfMonth(monthQuery);
+    const endDate = endOfMonth(monthQuery);
+    const prevMonthStart = startOfMonth(subMonths(monthQuery, 1));
+
+    // THE DEFINITIVE FIX: A single, top-level $facet with parallel pipelines. No nesting.
+    const pipeline = [
+      {
+        $facet: {
+          // --- Pipeline 1: Get all raw expenses for the current month ---
+          currentMonthExpenses: [
+            { $match: { userId, date: { $gte: startDate, $lte: endDate } } }
+          ],
+          // --- Pipeline 2: Get the total for the previous month (runs in parallel) ---
+          prevMonthTotal: [
+            { $match: { userId, date: { $gte: prevMonthStart, $lt: startDate } } },
+            { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+          ],
+        }
+      }
+    ];
+
+    const [results] = await Expense.aggregate(pipeline);
+    const currentMonthExpenses = results.currentMonthExpenses;
+
+    // Gracefully handle a month with no expenses
+    if (!currentMonthExpenses || currentMonthExpenses.length === 0) {
+      const emptyPayload = {
+        aiSummary: { totalSpent: 0, changeVsPreviousMonth: 0, topCategory: 'N/A' },
+        heatmapData: [],
+        categoryBreakdown: [],
+        notableTransactions: { largestExpense: null, mostFrequentCategory: null, highestSpendingDay: null }
+      };
+      return res.status(200).json({ success: true, data: emptyPayload });
+    }
+
+    // --- Perform final calculations in JavaScript from the pre-filtered data ---
+    const currentTotal = currentMonthExpenses.reduce((sum, tx) => sum + tx.totalAmount, 0);
+    const prevTotal = results.prevMonthTotal[0]?.total || 0;
+    
+    const changeVsPreviousMonth = prevTotal === 0 ? (currentTotal > 0 ? 100 : 0) : ((currentTotal - prevTotal) / prevTotal) * 100;
+
+    const categoryMap = currentMonthExpenses.reduce((acc, tx) => {
+        acc[tx.category] = (acc[tx.category] || 0) + tx.totalAmount;
+        return acc;
+    }, {});
+    const categoryBreakdown = Object.entries(categoryMap).map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total);
+
+    const heatmapData = Object.entries(currentMonthExpenses.reduce((acc, tx) => {
+        const day = format(new Date(tx.date), 'yyyy-MM-dd');
+        acc[day] = (acc[day] || 0) + tx.totalAmount;
+        return acc;
+    }, {})).map(([date, amount]) => ({ date, amount }));
+
+    const largestExpense = [...currentMonthExpenses].sort((a,b) => b.totalAmount - a.totalAmount)[0];
+    const freqMap = currentMonthExpenses.reduce((acc, tx) => { acc[tx.category] = (acc[tx.category] || 0) + 1; return acc; }, {});
+    const mostFrequentCategory = Object.entries(freqMap).sort((a,b) => b[1] - a[1])[0];
+    const dayMap = currentMonthExpenses.reduce((acc, tx) => { const day = format(new Date(tx.date), 'yyyy-MM-dd'); acc[day] = (acc[day] || 0) + tx.totalAmount; return acc; }, {});
+    const highestSpendingDay = Object.entries(dayMap).sort((a,b) => b[1] - a[1])[0];
+
+    const payload = {
+      aiSummary: {
+        totalSpent: currentTotal,
+        changeVsPreviousMonth: Number(changeVsPreviousMonth.toFixed(2)),
+        topCategory: categoryBreakdown[0]?.category || 'N/A',
+      },
+      heatmapData,
+      categoryBreakdown,
+      notableTransactions: {
+        largestExpense,
+        mostFrequentCategory: { category: mostFrequentCategory[0], count: mostFrequentCategory[1] },
+        highestSpendingDay: { date: highestSpendingDay[0], amount: highestSpendingDay[1] },
+      }
+    };
+
+    res.status(200).json({ success: true, data: payload });
+
+  } catch (error) {
+    console.error("Error fetching monthly story:", error);
+    res.status(500).json({ success: false, message: "Server error while fetching insights" });
   }
 };

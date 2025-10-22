@@ -7,6 +7,7 @@ import {
   handleEditExpense,
   handleDeleteExpense,
   getAnalyzedExpenses,
+  getMonthlyStory,
 } from "../controllers/expense.controller.js"
 import { validate } from "../middlewares/validate.middleware.js"
 import { expenseSchema,editExpenseSchema } from "../validators/expense.validator.js"
@@ -17,6 +18,7 @@ const router = express.Router()
 router.get("/", authMiddleware, handleExpenseRetrieval)
 router.get("/summary", authMiddleware, handleExpenseSummary)
 router.get("/analyze", authMiddleware, getAnalyzedExpenses);
+router.get("/monthly-story", authMiddleware, getMonthlyStory);
 
 //POST
 router.post(

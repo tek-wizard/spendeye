@@ -1,5 +1,5 @@
 import api from './axiosConfig';
-import { startOfMonth, endOfMonth } from 'date-fns';
+import { startOfMonth, endOfMonth, format } from 'date-fns';
 
 export const fetchDashboardSummaryAPI = async ({ startDate, endDate } = {}) => {
   const now = new Date();
@@ -14,7 +14,7 @@ export const fetchDashboardSummaryAPI = async ({ startDate, endDate } = {}) => {
   return data;
 };
 
-// This function fetches the raw list of expenses
+
 export const fetchExpensesAPI = async (dateRange) => {
   // Use the provided dateRange, or default to the current month if it's missing.
   const startDate = dateRange?.startDate || startOfMonth(new Date());
@@ -31,25 +31,30 @@ export const fetchExpensesAPI = async (dateRange) => {
   return data;
 };
 
+
 export const createExpenseAPI = async (expenseData) => {
   const { data } = await api.post('/expense/create', expenseData);
   return data;
 };
+
 
 export const updateExpenseAPI = async ({ expenseId, expenseData }) => {
   const { data } = await api.put(`/expense/${expenseId}`, expenseData);
   return data;
 };
 
+
 export const deleteExpenseAPI = async (expenseId) => {
   const { data } = await api.delete(`/expense/${expenseId}`);
   return data;
 };
 
+
 export const fetchSubTransactionsAPI = async (ids) => {
   const { data } = await api.post('/expense/subtransactions', { ids });
   return data.subTransactions;
 };
+
 
 export const fetchAnalyzedExpensesAPI = async (filters) => {
   const params = new URLSearchParams();
@@ -70,4 +75,11 @@ export const fetchAnalyzedExpensesAPI = async (filters) => {
 
   const { data } = await api.get(`/expense/analyze?${params.toString()}`);
   return data.data; // The backend wraps the payload, so we unwrap it here
+};
+
+
+export const fetchMonthlyStoryAPI = async (month) => {
+  const params = new URLSearchParams({ month: format(month, 'yyyy-MM') });
+  const { data } = await api.get(`/expense/monthly-story?${params.toString()}`);
+  return data.data;
 };
