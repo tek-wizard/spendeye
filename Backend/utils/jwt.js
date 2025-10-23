@@ -15,7 +15,7 @@ export const jwtGetUser=(token)=>{
         return null
       }
       try {
-        return jwt.verify(token, process.env.SECRET_KEY)
+        return jwt.verify(token, process.env.JWT_SECRET)
       } catch (error) {
         return null
       }
