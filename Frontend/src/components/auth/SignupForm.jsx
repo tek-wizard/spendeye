@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -12,23 +12,25 @@ import {
   List,
   ListItem,
   ListItemIcon,
-  ListItemText
-} from "@mui/material"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { signupSchema } from "./auth.schema"
+  ListItemText,
+} from "@mui/material";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signupSchema } from "./auth.schema";
 
 // Icons
-import Visibility from "@mui/icons-material/Visibility"
-import VisibilityOff from "@mui/icons-material/VisibilityOff"
-import CheckCircleIcon from "@mui/icons-material/CheckCircle"
-import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline"
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import CloudOffIcon from '@mui/icons-material/CloudOff';
 
-//hooks
+// Hooks
 import { useRegisterUser } from '../../hooks/useRegisterUser';
-import { SocialAuthDivider } from "./SocialAuthDivider" 
+import { useHealthCheck } from '../../hooks/useHealthCheck';
+import { SocialAuthDivider } from "./SocialAuthDivider"; 
 
-// Helper to check password requirements
+// Helper to check password requirements (unchanged)
 const checkPasswordRequirements = (password) => {
   if (!password) return [];
   return [
@@ -37,26 +39,58 @@ const checkPasswordRequirements = (password) => {
 };
 
 export const SignupForm = ({ onToggle }) => {
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
   const { registerUser, isRegistering } = useRegisterUser();
+  
+  // The hook now provides more information for a better UX
+  const { isBackendReady, isCheckingHealth, isError, failureCount } = useHealthCheck();
 
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(signupSchema),
-  })
+  });
 
-  const password = watch("password", "")
-  const requirements = checkPasswordRequirements(password)
+  const password = watch("password", "");
+  const requirements = checkPasswordRequirements(password);
   const allValid = requirements.every(req => req.valid);
 
   const onSubmit = async (data) => {
     registerUser(data);
+  };
+
+  // --- A multi-stage loading and error UI ---
+
+  // Stage 1: The patient loader, with informative feedback
+  if (isCheckingHealth) {
+    return (
+        <Stack spacing={2} alignItems="center" sx={{ minHeight: 400, justifyContent: 'center' }}>
+            <CircularProgress />
+            <Typography color="text.secondary">Connecting to service...</Typography>
+            <Typography variant="caption" color="text.disabled">
+                This can take up to 45 seconds on a cold start.
+            </Typography>
+        </Stack>
+    );
   }
 
+  // Stage 2: The final error state, with no retry button as requested
+  if (isError && !isBackendReady) {
+    return (
+        <Stack spacing={2} alignItems="center" sx={{ minHeight: 400, justifyContent: 'center' }}>
+            <CloudOffIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
+            <Typography sx={{ fontWeight: 'bold' }}>Service Unavailable</Typography>
+            <Typography color="text.secondary" align="center">
+                Could not connect to the server. Please refresh the page to try again.
+            </Typography>
+        </Stack>
+    );
+  }
+
+  // Stage 3: The final, ready-to-use form
   return (
     <Box>
       <Typography variant="h4" sx={{ fontWeight: "bold" }}>
@@ -66,7 +100,7 @@ export const SignupForm = ({ onToggle }) => {
         Start organizing your finances today.
       </Typography>
 
-      <SocialAuthDivider />
+      {/* <SocialAuthDivider /> */}
       
       <Box component="form" onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={2}>
@@ -106,7 +140,6 @@ export const SignupForm = ({ onToggle }) => {
             }}
           />
 
-          {/* Professional Checklist and Feedback */}
           {password.length > 0 && (
             <List dense sx={{ py: 0 }}>
               {requirements.map((req) => (
@@ -129,9 +162,9 @@ export const SignupForm = ({ onToggle }) => {
             color="primary"
             size="large"
             sx={{ py: 1.5 }}
-            disabled={isSubmitting || (password.length > 0 && !allValid)}
+            disabled={isRegistering || (password.length > 0 && !allValid)}
           >
-            {isSubmitting ? (
+            {isRegistering ? (
               <CircularProgress size={26} color="inherit" />
             ) : (
               "Create Account"
@@ -155,5 +188,5 @@ export const SignupForm = ({ onToggle }) => {
         </Link>
       </Typography>
     </Box>
-  )
-}
+  );
+};

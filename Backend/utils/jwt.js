@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken";
 
 export const jwtSetUser=(user)=>{
     const {_id,username,email}=user
-    // console.log(_id,username,email)
     const secret=process.env.JWT_SECRET
     return jwt.sign({
         _id,

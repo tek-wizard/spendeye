@@ -14,7 +14,7 @@ export const MobileHeader = ({ onTitleClick, onAvatarClick, isSettingsPage }) =>
     >
       <ButtonBase onClick={onTitleClick} sx={{ borderRadius: 1 }}>
         <Typography variant="h5" sx={{ fontWeight: 'bold', px: 1 }}>
-          Spendy
+          SpendEye
         </Typography>
       </ButtonBase>
       <IconButton onClick={onAvatarClick} sx={{ p: 0 }}>

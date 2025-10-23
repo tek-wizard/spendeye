@@ -39,3 +39,8 @@ export const resetPasswordAPI = async ({ token, newPassword }) => {
   const { data } = await api.post(`/auth/reset-password/${token}`, { newPassword });
   return data;
 };
+
+export const healthCheckAPI = async () => {
+  const { data } = await api.get('/auth/health');
+  return data;
+};

@@ -19,7 +19,7 @@ export const registerSchema = z.object({
   email: z.string().email({ message: "Invalid email format" }),
   phoneNumber: z
     .string()
-    .regex(phoneRegex, { message: "Invalid Indian phone number" })
+    .regex(phoneRegex, { message: "Invalid phone number" })
     .optional()
     .or(z.literal("")),
   password: z

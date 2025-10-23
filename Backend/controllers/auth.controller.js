@@ -5,8 +5,16 @@ import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import { jwtSetUser } from "../utils/jwt.js";
 import { sendEmail } from "../utils/emailService.js";
-import crypto from "crypto"; // Needed for generating password reset tokens
+import crypto from "crypto";
 
+
+// to chcek if backend is running
+export const handleHealthCheck = (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        message: 'Server is healthy and running.'
+    });
+};
 
 //user register
 export const handleRegistorUser = async (req, res) => {
@@ -14,7 +22,7 @@ export const handleRegistorUser = async (req, res) => {
     const takenEmail = await User.findOne({ email: req.body.email });
 
     if (takenEmail) {
-      return res.status(400).json({ // Use 400 for a bad request/conflict
+      return res.status(400).json({ // 400 bad request/conflict
         success: false,
         message: "Email already in use",
       });
@@ -47,7 +55,7 @@ export const handleloginUser = async (req, res) => {
     const foundUser = await User.findOne({ email });
 
     if (!foundUser) {
-      return res.status(401).json({ // 401 Unauthorized is more appropriate
+      return res.status(401).json({ // 401 Unauthorized
         success: false,
         message: "Invalid email or password",
       });
@@ -71,7 +79,7 @@ export const handleloginUser = async (req, res) => {
       user: foundUser,
     });
   } catch (error) {
-    res.status(500).json({ // Use 500 for a server error
+    res.status(500).json({ // 500 server error
       success: false,
       message: "Error during user login",
       error: error.message,
@@ -132,7 +140,7 @@ export const handleChangePassword = async (req, res) => {
 
         // 2. Update to the new password
         user.password = newPassword;
-        await user.save(); // The pre-save hook in your model will hash it automatically
+        await user.save(); // The pre-save hook in the model will hash it automatically
 
         res.status(200).json({
             success: true,
@@ -167,12 +175,12 @@ export const handleForgotPassword = async (req, res) => {
         
         // 2. Hash the token and set an expiry date before saving
         user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        // THE DEFINITIVE FIX: Token is now valid for 15 minutes (900,000 milliseconds)
+        // Token is now valid for 15 minutes (900,000 milliseconds)
         user.passwordResetExpires = Date.now() + 900000; 
 
         await user.save({ validateBeforeSave: false, session }); 
 
-        // THE DEFINITIVE FIX: Use the environment variable for the frontend URL
+        // Use the environment variable for the frontend URL
         const resetURL = `${process.env.FRONTEND_URL_BASE}/reset-password/${resetToken}`;
         
         const emailHTML = `
@@ -214,7 +222,7 @@ export const handleForgotPassword = async (req, res) => {
 };
 
 
-// CONTROLLER FOR DELETING AN ACCOUNT
+// deleting an account
 export const handleDeleteAccount = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -257,6 +265,7 @@ export const handleDeleteAccount = async (req, res) => {
     }
 };
 
+// reset password ( when forgot password )
 export const handleResetPassword = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();

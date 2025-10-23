@@ -12,7 +12,7 @@ import {
 } from "@mui/material"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { loginSchema } from "./auth.schema" // Correct path
+import { loginSchema } from "./auth.schema" 
 
 // Icons
 import Visibility from "@mui/icons-material/Visibility"
@@ -21,7 +21,7 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff"
 //hooks
 import { useLoginUser } from "../../hooks/useLoginUser"
 import { ForgotPasswordModal } from './ForgotPasswordModal';
-import { SocialAuthDivider } from "./SocialAuthDivider" // THE FIX: Import new component
+import { SocialAuthDivider } from "./SocialAuthDivider"
 
 export const LoginForm = ({ onToggle }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -49,8 +49,7 @@ export const LoginForm = ({ onToggle }) => {
             Log in to continue to your dashboard.
         </Typography>
 
-        {/* THE FIX: Add the social auth divider */}
-        <SocialAuthDivider />
+        {/* <SocialAuthDivider /> */}
 
         <Box component="form" onSubmit={handleSubmit(onSubmit)}>
             <Stack spacing={2}>

@@ -30,7 +30,7 @@ export const TopNavBar = ({ activeTab, onNavigate, onAvatarClick, isSettingsPage
       }}
     >
       <Toolbar className="max-w-7xl mx-auto w-full">
-        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Spendy</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>SpendEye</Typography>
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
           {navItems.map((item) => (
             <Button key={item.id} onClick={() => onNavigate(item.path)} sx={{ color: 'text.primary', position: 'relative', py: 2, height: '100%' }}>

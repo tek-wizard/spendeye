@@ -2,7 +2,7 @@ import Expense from "../models/expense.model.js"
 import Ledger from "../models/ledger.model.js"
 import mongoose from "mongoose"
 import User from "../models/user.model.js"
-import { startOfMonth, endOfMonth, format,subMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, format, subMonths } from "date-fns"
 
 export const handleExpenseCreation = async (req, res) => {
   try {
@@ -81,10 +81,16 @@ export const handleEditExpense = async (req, res) => {
     }
 
     // Delete old ledgers if expense was split
-    if (expense.isSplit && expense.splitDetails && expense.splitDetails.length > 0) {
-      const ledgerIdsToDelete = expense.splitDetails.map(split => split.ledgerId).filter(id => id);
+    if (
+      expense.isSplit &&
+      expense.splitDetails &&
+      expense.splitDetails.length > 0
+    ) {
+      const ledgerIdsToDelete = expense.splitDetails
+        .map((split) => split.ledgerId)
+        .filter((id) => id)
       if (ledgerIdsToDelete.length > 0) {
-        await Ledger.deleteMany({ _id: { $in: ledgerIdsToDelete } });
+        await Ledger.deleteMany({ _id: { $in: ledgerIdsToDelete } })
       }
     }
 
@@ -136,8 +142,6 @@ export const handleEditExpense = async (req, res) => {
     })
   }
 }
-
-
 
 export const handleExpenseRetrieval = async (req, res) => {
   try {
@@ -277,10 +281,16 @@ export const handleDeleteExpense = async (req, res) => {
       })
     }
 
-    if (expense.isSplit && expense.splitDetails && expense.splitDetails.length > 0) {
-      const ledgerIdsToDelete = expense.splitDetails.map(split => split.ledgerId).filter(id => id);
+    if (
+      expense.isSplit &&
+      expense.splitDetails &&
+      expense.splitDetails.length > 0
+    ) {
+      const ledgerIdsToDelete = expense.splitDetails
+        .map((split) => split.ledgerId)
+        .filter((id) => id)
       if (ledgerIdsToDelete.length > 0) {
-        await Ledger.deleteMany({ _id: { $in: ledgerIdsToDelete } });
+        await Ledger.deleteMany({ _id: { $in: ledgerIdsToDelete } })
       }
     }
 
@@ -298,7 +308,7 @@ export const handleDeleteExpense = async (req, res) => {
 
 export const getAnalyzedExpenses = async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.user._id);
+    const userId = new mongoose.Types.ObjectId(req.user._id)
 
     // --- Destructure all possible query parameters ---
     const {
@@ -311,29 +321,29 @@ export const getAnalyzedExpenses = async (req, res) => {
       isSplit,
       page = "1",
       limit = "25",
-    } = req.query;
+    } = req.query
 
     // --- Build the initial $match stage for the aggregation pipeline ---
     const matchStage = {
       userId,
       date: { $gte: new Date(startDate), $lte: new Date(endDate) },
       totalAmount: { $gte: parseFloat(minAmount), $lte: parseFloat(maxAmount) },
-    };
+    }
 
     if (search) {
-      matchStage.notes = { $regex: search, $options: "i" }; // Case-insensitive search
+      matchStage.notes = { $regex: search, $options: "i" } // Case-insensitive search
     }
     if (categories) {
-      matchStage.category = { $in: categories.split(',') }; // Handle multiple categories
+      matchStage.category = { $in: categories.split(",") } // Handle multiple categories
     }
     if (isSplit !== undefined) {
-      matchStage.isSplit = isSplit === 'true'; // Handle boolean filter
+      matchStage.isSplit = isSplit === "true" // Handle boolean filter
     }
 
     // --- Calculate pagination variables ---
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
-    const skip = (pageNum - 1) * limitNum;
+    const pageNum = parseInt(page, 10)
+    const limitNum = parseInt(limit, 10)
+    const skip = (pageNum - 1) * limitNum
 
     // --- Main Aggregation Pipeline using $facet ---
     const aggregationPipeline = [
@@ -364,17 +374,22 @@ export const getAnalyzedExpenses = async (req, res) => {
           ],
         },
       },
-    ];
+    ]
 
-    const [results] = await Expense.aggregate(aggregationPipeline);
+    const [results] = await Expense.aggregate(aggregationPipeline)
 
     // --- Format the response ---
-    const metadata = results.metadata[0] || { totalTransactions: 0, totalSpent: 0 };
-    const totalPages = Math.ceil(metadata.totalTransactions / limitNum);
+    const metadata = results.metadata[0] || {
+      totalTransactions: 0,
+      totalSpent: 0,
+    }
+    const totalPages = Math.ceil(metadata.totalTransactions / limitNum)
 
-    const dateDiffInDays = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24);
-    const averageDailySpend = metadata.totalSpent / (dateDiffInDays || 1);
-    
+    const dateDiffInDays =
+      (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+      (1000 * 3600 * 24)
+    const averageDailySpend = metadata.totalSpent / (dateDiffInDays || 1)
+
     res.status(200).json({
       success: true,
       message: "Analyzed expenses fetched successfully",
@@ -391,101 +406,145 @@ export const getAnalyzedExpenses = async (req, res) => {
         },
         categoryBreakdown: results.categoryBreakdown || [],
       },
-    });
+    })
   } catch (error) {
-    console.error("Error fetching analyzed expenses:", error);
+    console.error("Error fetching analyzed expenses:", error)
     res.status(500).json({
       success: false,
       message: "An error occurred while analyzing expenses.",
       error: error.message,
-    });
+    })
   }
-};
-
+}
 
 export const getMonthlyStory = async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.user._id);
-    const monthQuery = req.query.month ? new Date(req.query.month) : new Date();
-    
-    const startDate = startOfMonth(monthQuery);
-    const endDate = endOfMonth(monthQuery);
-    const prevMonthStart = startOfMonth(subMonths(monthQuery, 1));
+    const userId = new mongoose.Types.ObjectId(req.user._id)
+    const monthQuery = req.query.month ? new Date(req.query.month) : new Date()
 
-    // THE DEFINITIVE FIX: A single, top-level $facet with parallel pipelines. No nesting.
+    const startDate = startOfMonth(monthQuery)
+    const endDate = endOfMonth(monthQuery)
+    const prevMonthStart = startOfMonth(subMonths(monthQuery, 1))
+
+    // A single, top-level $facet with parallel pipelines. No nesting.
     const pipeline = [
       {
         $facet: {
           // --- Pipeline 1: Get all raw expenses for the current month ---
           currentMonthExpenses: [
-            { $match: { userId, date: { $gte: startDate, $lte: endDate } } }
+            { $match: { userId, date: { $gte: startDate, $lte: endDate } } },
           ],
           // --- Pipeline 2: Get the total for the previous month (runs in parallel) ---
           prevMonthTotal: [
-            { $match: { userId, date: { $gte: prevMonthStart, $lt: startDate } } },
-            { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+            {
+              $match: {
+                userId,
+                date: { $gte: prevMonthStart, $lt: startDate },
+              },
+            },
+            { $group: { _id: null, total: { $sum: "$totalAmount" } } },
           ],
-        }
-      }
-    ];
+        },
+      },
+    ]
 
-    const [results] = await Expense.aggregate(pipeline);
-    const currentMonthExpenses = results.currentMonthExpenses;
+    const [results] = await Expense.aggregate(pipeline)
+    const currentMonthExpenses = results.currentMonthExpenses
 
     // Gracefully handle a month with no expenses
     if (!currentMonthExpenses || currentMonthExpenses.length === 0) {
       const emptyPayload = {
-        aiSummary: { totalSpent: 0, changeVsPreviousMonth: 0, topCategory: 'N/A' },
+        aiSummary: {
+          totalSpent: 0,
+          changeVsPreviousMonth: 0,
+          topCategory: "N/A",
+        },
         heatmapData: [],
         categoryBreakdown: [],
-        notableTransactions: { largestExpense: null, mostFrequentCategory: null, highestSpendingDay: null }
-      };
-      return res.status(200).json({ success: true, data: emptyPayload });
+        notableTransactions: {
+          largestExpense: null,
+          mostFrequentCategory: null,
+          highestSpendingDay: null,
+        },
+      }
+      return res.status(200).json({ success: true, data: emptyPayload })
     }
 
     // --- Perform final calculations in JavaScript from the pre-filtered data ---
-    const currentTotal = currentMonthExpenses.reduce((sum, tx) => sum + tx.totalAmount, 0);
-    const prevTotal = results.prevMonthTotal[0]?.total || 0;
-    
-    const changeVsPreviousMonth = prevTotal === 0 ? (currentTotal > 0 ? 100 : 0) : ((currentTotal - prevTotal) / prevTotal) * 100;
+    const currentTotal = currentMonthExpenses.reduce(
+      (sum, tx) => sum + tx.totalAmount,
+      0
+    )
+    const prevTotal = results.prevMonthTotal[0]?.total || 0
+
+    const changeVsPreviousMonth =
+      prevTotal === 0
+        ? currentTotal > 0
+          ? 100
+          : 0
+        : ((currentTotal - prevTotal) / prevTotal) * 100
 
     const categoryMap = currentMonthExpenses.reduce((acc, tx) => {
-        acc[tx.category] = (acc[tx.category] || 0) + tx.totalAmount;
-        return acc;
-    }, {});
-    const categoryBreakdown = Object.entries(categoryMap).map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total);
+      acc[tx.category] = (acc[tx.category] || 0) + tx.totalAmount
+      return acc
+    }, {})
+    const categoryBreakdown = Object.entries(categoryMap)
+      .map(([category, total]) => ({ category, total }))
+      .sort((a, b) => b.total - a.total)
 
-    const heatmapData = Object.entries(currentMonthExpenses.reduce((acc, tx) => {
-        const day = format(new Date(tx.date), 'yyyy-MM-dd');
-        acc[day] = (acc[day] || 0) + tx.totalAmount;
-        return acc;
-    }, {})).map(([date, amount]) => ({ date, amount }));
+    const heatmapData = Object.entries(
+      currentMonthExpenses.reduce((acc, tx) => {
+        const day = format(new Date(tx.date), "yyyy-MM-dd")
+        acc[day] = (acc[day] || 0) + tx.totalAmount
+        return acc
+      }, {})
+    ).map(([date, amount]) => ({ date, amount }))
 
-    const largestExpense = [...currentMonthExpenses].sort((a,b) => b.totalAmount - a.totalAmount)[0];
-    const freqMap = currentMonthExpenses.reduce((acc, tx) => { acc[tx.category] = (acc[tx.category] || 0) + 1; return acc; }, {});
-    const mostFrequentCategory = Object.entries(freqMap).sort((a,b) => b[1] - a[1])[0];
-    const dayMap = currentMonthExpenses.reduce((acc, tx) => { const day = format(new Date(tx.date), 'yyyy-MM-dd'); acc[day] = (acc[day] || 0) + tx.totalAmount; return acc; }, {});
-    const highestSpendingDay = Object.entries(dayMap).sort((a,b) => b[1] - a[1])[0];
+    const largestExpense = [...currentMonthExpenses].sort(
+      (a, b) => b.totalAmount - a.totalAmount
+    )[0]
+    const freqMap = currentMonthExpenses.reduce((acc, tx) => {
+      acc[tx.category] = (acc[tx.category] || 0) + 1
+      return acc
+    }, {})
+    const mostFrequentCategory = Object.entries(freqMap).sort(
+      (a, b) => b[1] - a[1]
+    )[0]
+    const dayMap = currentMonthExpenses.reduce((acc, tx) => {
+      const day = format(new Date(tx.date), "yyyy-MM-dd")
+      acc[day] = (acc[day] || 0) + tx.totalAmount
+      return acc
+    }, {})
+    const highestSpendingDay = Object.entries(dayMap).sort(
+      (a, b) => b[1] - a[1]
+    )[0]
 
     const payload = {
       aiSummary: {
         totalSpent: currentTotal,
         changeVsPreviousMonth: Number(changeVsPreviousMonth.toFixed(2)),
-        topCategory: categoryBreakdown[0]?.category || 'N/A',
+        topCategory: categoryBreakdown[0]?.category || "N/A",
       },
       heatmapData,
       categoryBreakdown,
       notableTransactions: {
         largestExpense,
-        mostFrequentCategory: { category: mostFrequentCategory[0], count: mostFrequentCategory[1] },
-        highestSpendingDay: { date: highestSpendingDay[0], amount: highestSpendingDay[1] },
-      }
-    };
+        mostFrequentCategory: {
+          category: mostFrequentCategory[0],
+          count: mostFrequentCategory[1],
+        },
+        highestSpendingDay: {
+          date: highestSpendingDay[0],
+          amount: highestSpendingDay[1],
+        },
+      },
+    }
 
-    res.status(200).json({ success: true, data: payload });
-
+    res.status(200).json({ success: true, data: payload })
   } catch (error) {
-    console.error("Error fetching monthly story:", error);
-    res.status(500).json({ success: false, message: "Server error while fetching insights" });
+    console.error("Error fetching monthly story:", error)
+    res
+      .status(500)
+      .json({ success: false, message: "Server error while fetching insights" })
   }
-};
+}
