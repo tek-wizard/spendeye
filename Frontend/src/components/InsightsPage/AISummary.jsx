@@ -94,7 +94,7 @@ export const AISummary = ({ summary, isLoading }) => {
           >
             {prevMonthChange.text}
           </Box>{" "}
-          than last month.
+          than its previous month.
         </Typography>
 
         <Typography variant="body1" color="text.secondary">

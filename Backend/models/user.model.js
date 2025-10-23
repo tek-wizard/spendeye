@@ -21,7 +21,7 @@ const UserSchema = mongoose.Schema(
     },
     budget:{
       type:Number,
-      default:1000
+      default:5000
     },
     contacts: [
       {
@@ -36,6 +36,12 @@ const UserSchema = mongoose.Schema(
     ],
     budgetLastUpdated: {
       type: Date,
+    },
+    passwordResetToken: {
+        type: String,
+    },
+    passwordResetExpires: {
+        type: Date,
     },
   },
   { timestamps: true }

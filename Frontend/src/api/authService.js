@@ -29,3 +29,13 @@ export const deleteAccountAPI = async () => {
   const { data } = await api.delete('/auth/me');
   return data;
 };
+
+export const forgotPasswordAPI = async (emailData) => {
+  const { data } = await api.post('/auth/forgot-password', emailData);
+  return data;
+};
+
+export const resetPasswordAPI = async ({ token, newPassword }) => {
+  const { data } = await api.post(`/auth/reset-password/${token}`, { newPassword });
+  return data;
+};

@@ -4,10 +4,10 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useCategoryMaps } from '../utils/categoryMaps';
 
 const typeLabels = {
-    "Got Back": "You received money",
+    "Got Back": "You got back your money",
     "Borrowed": "You borrowed money",
     "Lent": "You lent money",
-    "Paid Back": "You repaid money",
+    "Paid Back": "You repaid borrowed money",
 };
 
 const TransactionRow = ({ transaction }) => {

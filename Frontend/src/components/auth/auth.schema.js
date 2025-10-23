@@ -18,7 +18,7 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required").regex(/^\S*$/, "Password cannot contain spaces"),
 });
 
-//Schema for add contact form
+// Schema for add contact form
 export const contactSchema = z.object({
   contactName: z.string()
     .min(1, { message: "Contact name is required" })
@@ -27,4 +27,17 @@ export const contactSchema = z.object({
     .regex(phoneRegex, { message: "Invalid Indian phone number" })
     .optional()
     .or(z.literal('')),
+});
+
+// THE FIX: Schema for the Forgot Password flow
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address to proceed"),
+});
+
+export const resetPasswordSchema = z.object({
+  newPassword: z.string().min(6, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine(data => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
 });

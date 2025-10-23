@@ -13,6 +13,7 @@ import LedgerPage from "./pages/LedgerPage";
 import LedgerHistoryPage from "./pages/LedgerHistoryPage";
 import InsightsPage from "./pages/InsightsPage";
 import SettingsPage from "./pages/SettingsPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 function App() {
   return (
@@ -20,8 +21,9 @@ function App() {
       <Toaster richColors position="top-right" />
       <BrowserRouter>
         <Routes>
-          {/* --- Public Route (Auth) --- */}
+          {/* --- Public Routes (Auth,reset-password) --- */}
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
           {/* --- Protected Routes --- */}
           <Route element={<ProtectedRoute />}>

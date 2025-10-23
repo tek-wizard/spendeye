@@ -11,7 +11,7 @@ import { DangerZone } from '../components/SettingsPage/DangerZone';
 const SettingsPage = () => {
     const { user, isLoading } = useAuth();
 
-    if (isLoading || !user) { // Added !user for robustness
+    if (isLoading || !user) {
         return (
             <Stack spacing={3}>
                 <Skeleton variant="text" width="40%" height={40} />
@@ -25,11 +25,7 @@ const SettingsPage = () => {
 
     return (
         <Box>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
-                Settings
-            </Typography>
             <Stack spacing={3}>
-                {/* THE FIX: Use the real component and pass the user prop */}
                 <ProfileSection user={user} />
                 <FinancialsSection user={user} />
                 <SecuritySection user={user} />

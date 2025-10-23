@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import {
   Box,
   Typography,
@@ -8,8 +8,11 @@ import {
   Link,
   InputAdornment,
   IconButton,
-  LinearProgress,
   CircularProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText
 } from "@mui/material"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -18,37 +21,23 @@ import { signupSchema } from "./auth.schema"
 // Icons
 import Visibility from "@mui/icons-material/Visibility"
 import VisibilityOff from "@mui/icons-material/VisibilityOff"
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline"
 
 //hooks
 import { useRegisterUser } from '../../hooks/useRegisterUser';
+import { SocialAuthDivider } from "./SocialAuthDivider" 
 
-// Helper to check password strength
-const checkPasswordStrength = (password) => {
-  if (!password) return { score: 0, label: "", color: "inherit" }
-  const hasNumber = /\d/.test(password)
-  const hasSpecialChar = /[!@#$%^&*]/.test(password)
-  const hasUpperCase = /[A-Z]/.test(password)
-  let score = 1 // Base score for any password
-  if (password.length > 8) score++
-  if (hasNumber || hasSpecialChar) score++
-  if (hasNumber && hasSpecialChar && hasUpperCase) score++
-
-  switch (score) {
-    case 1:
-      return { score: 25, label: "Weak", color: "error" }
-    case 2:
-      return { score: 50, label: "Medium", color: "warning" }
-    case 3:
-      return { score: 75, label: "Good", color: "success" }
-    case 4:
-      return { score: 100, label: "Strong", color: "success" }
-    default:
-      return { score: 0, label: "", color: "inherit" }
-  }
-}
+// Helper to check password requirements
+const checkPasswordRequirements = (password) => {
+  if (!password) return [];
+  return [
+    { label: "At least 6 characters", valid: password.length >= 6 },
+  ];
+};
 
 export const SignupForm = ({ onToggle }) => {
-  const [showPassword, setShowPassword] = React.useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { registerUser, isRegistering } = useRegisterUser();
 
   const {
@@ -60,8 +49,9 @@ export const SignupForm = ({ onToggle }) => {
     resolver: zodResolver(signupSchema),
   })
 
-  const password = watch("password", "") // Watch the password field for the strength meter
-  const strength = checkPasswordStrength(password)
+  const password = watch("password", "")
+  const requirements = checkPasswordRequirements(password)
+  const allValid = requirements.every(req => req.valid);
 
   const onSubmit = async (data) => {
     registerUser(data);
@@ -76,6 +66,8 @@ export const SignupForm = ({ onToggle }) => {
         Start organizing your finances today.
       </Typography>
 
+      <SocialAuthDivider />
+      
       <Box component="form" onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={2}>
           <TextField
@@ -114,21 +106,21 @@ export const SignupForm = ({ onToggle }) => {
             }}
           />
 
+          {/* Professional Checklist and Feedback */}
           {password.length > 0 && (
-            <Box sx={{ width: "100%" }}>
-              <LinearProgress
-                variant="determinate"
-                value={strength.score}
-                color={strength.color}
-              />
-              <Typography
-                variant="caption"
-                color={strength.color + ".main"}
-                sx={{ mt: 0.5, display: "block" }}
-              >
-                {strength.label}
-              </Typography>
-            </Box>
+            <List dense sx={{ py: 0 }}>
+              {requirements.map((req) => (
+                <ListItem key={req.label} disableGutters sx={{ py: 0 }}>
+                  <ListItemIcon sx={{ minWidth: 28, color: req.valid ? 'success.main' : 'text.secondary' }}>
+                    {req.valid ? <CheckCircleIcon fontSize="small" /> : <RemoveCircleOutlineIcon fontSize="small" />}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={req.label}
+                    primaryTypographyProps={{ variant: 'caption', color: req.valid ? 'success.main' : 'text.secondary' }}
+                  />
+                </ListItem>
+              ))}
+            </List>
           )}
 
           <Button
@@ -137,7 +129,7 @@ export const SignupForm = ({ onToggle }) => {
             color="primary"
             size="large"
             sx={{ py: 1.5 }}
-            disabled={isSubmitting}
+            disabled={isSubmitting || (password.length > 0 && !allValid)}
           >
             {isSubmitting ? (
               <CircularProgress size={26} color="inherit" />

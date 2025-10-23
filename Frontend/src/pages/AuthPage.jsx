@@ -5,10 +5,6 @@ import {
   Box,
   Grid,
   Typography,
-  Paper,
-  Link,
-  Divider,
-  Button,
 } from "@mui/material"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTheme } from "@mui/material/styles"
@@ -18,29 +14,28 @@ import { SignupForm } from "../components/auth/SignupForm"
 import { LoginForm } from "../components/auth/LoginForm"
 
 // Icons
-import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined"
-import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined"
-import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined"
-import GoogleIcon from "@mui/icons-material/Google" // For Social Login button
+import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined"
+import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined"
+import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlined"
 
 const features = [
   {
-    icon: <AssessmentOutlinedIcon sx={{ fontSize: 80 }} />,
-    title: "Visualize Your Spending",
+    icon: <ForumOutlinedIcon sx={{ fontSize: 80 }} />,
+    title: "A Financial Conversation",
     description:
-      "See a complete breakdown of your spending with interactive donut charts. Click any category to instantly filter your transactions.",
+      "Transform your ledger into an intuitive, chat-style history. Track money lent and borrowed with an aesthetic and professional interface that feels like a conversation.",
   },
   {
-    icon: <HandshakeOutlinedIcon sx={{ fontSize: 80 }} />,
-    title: "Manage Debts Simply",
+    icon: <InsightsOutlinedIcon sx={{ fontSize: 80 }} />,
+    title: "Your Monthly Story",
     description:
-      "Never lose track of IOUs. Settle debts and send friendly SMS reminders directly from your ledger snapshot.",
+      "Go beyond data with an AI-generated summary of your financial month. Discover patterns with a beautiful heatmap calendar and get key insights at a glance.",
   },
   {
-    icon: <AddCircleOutlineOutlinedIcon sx={{ fontSize: 80 }} />,
-    title: "Effortless Expense Entry",
+    icon: <SpaceDashboardOutlinedIcon sx={{ fontSize: 80 }} />,
+    title: "Your Expense Command Center",
     description:
-      "Our step-by-step form lets you add detailed expenses, split bills with contacts, and confirm everything before saving.",
+      "Analyze your spending with a professional three-column dashboard. Utilize powerful, real-time filters and sticky summary charts for a complete overview.",
   },
 ]
 
@@ -66,11 +61,10 @@ export const AuthPage = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveFeature((prev) => (prev + 1) % features.length)
-    }, 4000) // Change feature every 4 seconds
+    }, 6000)
     return () => clearInterval(timer)
   }, [])
 
-  // Apply the animated background class to the root Grid container
   return (
     <Grid container sx={{ minHeight: "100vh" }} className="auth-background">
       {/* 1. The Floating Showcase Panel (Left Side) */}
@@ -111,9 +105,7 @@ export const AuthPage = () => {
             >
               {features[activeFeature].title}
             </Typography>
-            <Typography
-              variant="h5"
-            >
+            <Typography variant="h5">
               {features[activeFeature].description}
             </Typography>
           </motion.div>
@@ -128,21 +120,21 @@ export const AuthPage = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          // Mobile view has a subtle dark overlay
           bgcolor: { xs: "rgba(0,0,0,0.2)", md: "transparent" },
         }}
       >
         <Box
           sx={{
-            p: 4,
-            width: "100%",
-            maxWidth: 400,
-            // The Glassmorphism effect
-            bgcolor: "rgba(30, 30, 46, 0.6)", // Semi-transparent card color
+            p: { xs: 3, sm: 4 },
+            width: "90%",
+            maxWidth: { xs: 350, sm: 400, md: 420 },
+            bgcolor: "rgba(30, 30, 46, 0.6)",
             backdropFilter: "blur(16px) saturate(180%)",
             border: "1px solid",
             borderColor: "rgba(255, 255, 255, 0.125)",
-            borderRadius: 4,
+            borderRadius: { xs: 2, sm: 3, md: 4 },
+            mx: "auto",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
           }}
         >
           <AnimatePresence mode="wait">

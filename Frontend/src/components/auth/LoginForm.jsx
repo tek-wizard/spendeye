@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import {
   Box,
   Typography,
@@ -8,13 +8,11 @@ import {
   Link,
   InputAdornment,
   IconButton,
-  FormControlLabel,
-  Checkbox,
   CircularProgress,
 } from "@mui/material"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { loginSchema } from "./auth.schema"
+import { loginSchema } from "./auth.schema" // Correct path
 
 // Icons
 import Visibility from "@mui/icons-material/Visibility"
@@ -22,10 +20,13 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff"
 
 //hooks
 import { useLoginUser } from "../../hooks/useLoginUser"
+import { ForgotPasswordModal } from './ForgotPasswordModal';
+import { SocialAuthDivider } from "./SocialAuthDivider" // THE FIX: Import new component
 
 export const LoginForm = ({ onToggle }) => {
-  const [showPassword, setShowPassword] = React.useState(false)
-  const { loginUser, isLoggingIn } = useLoginUser()
+  const [showPassword, setShowPassword] = useState(false);
+  const [isForgotModalOpen, setForgotModalOpen] = useState(false);
+  const { loginUser, isLoggingIn } = useLoginUser();
 
   const {
     register,
@@ -33,110 +34,106 @@ export const LoginForm = ({ onToggle }) => {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
-  })
+  });
 
   const onSubmit = async (data) => {
-    console.log("Login data is valid:", data)
-    loginUser(data)
-  }
+    loginUser(data);
+  };
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-        Welcome Back
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Log in to continue to your dashboard.
-      </Typography>
+        <Typography variant="h4" sx={{ fontWeight: "bold" }}>
+            Welcome Back
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Log in to continue to your dashboard.
+        </Typography>
 
-      <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={2}>
-          <TextField
-            label="Email Address"
-            variant="outlined"
-            type="email"
-            {...register("email")}
-            error={!!errors.email}
-            helperText={errors.email?.message}
-          />
-          <TextField
-            label="Password"
-            variant="outlined"
-            type={showPassword ? "text" : "password"}
-            {...register("password")}
-            error={!!errors.password}
-            helperText={errors.password?.message}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <FormControlLabel
-              control={<Checkbox defaultChecked color="primary" />}
-              label="Remember me"
-              sx={{
-                "& .MuiFormControlLabel-label": {
-                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                },
-              }}
-            />
-            <Link
-              href="#"
-              variant="body2"
-              sx={{
-                fontWeight: "bold",
-                fontSize: { xs: "0.75rem", sm: "0.875rem" }, 
-              }}
-            >
-              Forgot Password?
-            </Link>
-          </Box>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            size="large"
-            sx={{ py: 1.5 }}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <CircularProgress size={26} color="inherit" />
-            ) : (
-              "Log in"
-            )}
-          </Button>
-        </Stack>
-      </Box>
+        {/* THE FIX: Add the social auth divider */}
+        <SocialAuthDivider />
 
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ mt: 3, textAlign: "center" }}
-      >
-        Don't have an account?{" "}
-        <Link
-          href="#"
-          onClick={onToggle}
-          sx={{ fontWeight: "bold", color: "primary.main" }}
+        <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+            <Stack spacing={2}>
+                <TextField
+                    label="Email Address"
+                    variant="outlined"
+                    type="email"
+                    {...register("email")}
+                    error={!!errors.email}
+                    helperText={errors.email?.message}
+                />
+                <TextField
+                    label="Password"
+                    variant="outlined"
+                    type={showPassword ? "text" : "password"}
+                    {...register("password")}
+                    error={!!errors.password}
+                    helperText={errors.password?.message}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="end"
+                                >
+                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                    }}
+                >
+                    <Link
+                        href="#"
+                        variant="body2"
+                        onClick={(e) => { e.preventDefault(); setForgotModalOpen(true); }}
+                        sx={{
+                            fontWeight: "bold",
+                            fontSize: { xs: "0.75rem", sm: "0.875rem" }, 
+                        }}
+                    >
+                        Forgot Password?
+                    </Link>
+                </Box>
+                <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    sx={{ py: 1.5 }}
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? (
+                        <CircularProgress size={26} color="inherit" />
+                    ) : (
+                        "Log in"
+                    )}
+                </Button>
+            </Stack>
+        </Box>
+
+        <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 3, textAlign: "center" }}
         >
-          Sign up
-        </Link>
-      </Typography>
+            Don't have an account?{" "}
+            <Link
+                href="#"
+                onClick={onToggle}
+                sx={{ fontWeight: "bold", color: "primary.main" }}
+            >
+                Sign up
+            </Link>
+        </Typography>
+        
+        <ForgotPasswordModal open={isForgotModalOpen} onClose={() => setForgotModalOpen(false)} />
     </Box>
-  )
-}
+  );
+};
