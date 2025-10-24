@@ -17,7 +17,7 @@ import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined";
 import { useLedgerHistory } from "../../hooks/useLedgerHistory";
 import { useCreateLedgerEntry } from "../../hooks/useCreateLedgerEntry";
 import { TransactionBubble } from "./TransactionBubble";
-import { GroupedTransactionCard } from "./GroupedTransactionCard"; // ✅ NEW
+import { GroupedTransactionCard } from "./GroupedTransactionCard";
 import { SettleUpModal } from "./SettleUpModal";
 import { QuickEntryPanel } from "./QuickEntryPanel";
 import { NotificationModal } from "../NotificationModal";
@@ -197,12 +197,9 @@ export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
               "Your payment was automatically split into the following entries for accuracy:",
             items: createdItems,
           });
-        } else {
-          toast.success(data.message || "Transaction added!");
-        }
+        } 
       },
       onError: () => {
-        toast.error("Failed to add transaction.");
       },
     });
   };
@@ -358,6 +355,7 @@ export const HistoryPanel = ({ selectedPerson, onClearSelection }) => {
           onCommit={handleCommitEntry}
           onReset={handleResetEntry}
           entryType={entryType}
+          isCommitting={isCreating}
         />
       </Paper>
 

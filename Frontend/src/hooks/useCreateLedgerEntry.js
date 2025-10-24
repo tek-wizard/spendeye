@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createLedgerEntryAPI } from '../api/ledgerService';
 import { toast } from 'sonner';
 
-export const useCreateLedgerEntry = () => {
+export const useCreateLedgerEntry = (options) => { 
   const queryClient = useQueryClient();
 
   const {
@@ -25,10 +25,13 @@ export const useCreateLedgerEntry = () => {
       queryClient.invalidateQueries({ queryKey: ['ledgerPeople'] });
       queryClient.invalidateQueries({ queryKey: ['ledgerHistory'] });
 
+      options?.onSuccess?.(data); 
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || 'Failed to create ledger entry');
+      toast.error(err.response?.data?.message || err.message || 'Failed to create ledger entry');
+      options?.onError?.(err);
     },
+    ...options 
   });
 
   return {

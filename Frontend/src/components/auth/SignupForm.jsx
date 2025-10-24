@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from "react"
 import {
   Box,
   Typography,
@@ -13,37 +13,37 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-} from "@mui/material";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { signupSchema } from "./auth.schema";
+} from "@mui/material"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { signupSchema } from "./auth.schema"
 
 // Icons
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
-import CloudOffIcon from '@mui/icons-material/CloudOff';
+import Visibility from "@mui/icons-material/Visibility"
+import VisibilityOff from "@mui/icons-material/VisibilityOff"
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline"
+import CloudOffIcon from '@mui/icons-material/CloudOff'
 
 // Hooks
-import { useRegisterUser } from '../../hooks/useRegisterUser';
-import { useHealthCheck } from '../../hooks/useHealthCheck';
-import { SocialAuthDivider } from "./SocialAuthDivider"; 
+import { useRegisterUser } from '../../hooks/useRegisterUser'
+import { useHealthCheck } from '../../hooks/useHealthCheck'
+import { SocialAuthDivider } from "./SocialAuthDivider" 
 
 // Helper to check password requirements (unchanged)
 const checkPasswordRequirements = (password) => {
-  if (!password) return [];
+  if (!password) return []
   return [
     { label: "At least 6 characters", valid: password.length >= 6 },
-  ];
-};
+  ]
+}
 
 export const SignupForm = ({ onToggle }) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const { registerUser, isRegistering } = useRegisterUser();
+  const [showPassword, setShowPassword] = useState(false)
+  const { registerUser, isRegistering } = useRegisterUser()
   
   // The hook now provides more information for a better UX
-  const { isBackendReady, isCheckingHealth, isError, failureCount } = useHealthCheck();
+  const { isBackendReady, isCheckingHealth, isError, failureCount } = useHealthCheck()
 
   const {
     register,
@@ -52,15 +52,15 @@ export const SignupForm = ({ onToggle }) => {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(signupSchema),
-  });
+  })
 
-  const password = watch("password", "");
-  const requirements = checkPasswordRequirements(password);
-  const allValid = requirements.every(req => req.valid);
+  const password = watch("password", "")
+  const requirements = checkPasswordRequirements(password)
+  const allValid = requirements.every(req => req.valid)
 
   const onSubmit = async (data) => {
-    registerUser(data);
-  };
+    registerUser(data)
+  }
 
   // --- A multi-stage loading and error UI ---
 
@@ -74,7 +74,7 @@ export const SignupForm = ({ onToggle }) => {
                 This can take up to 45 seconds on a cold start.
             </Typography>
         </Stack>
-    );
+    )
   }
 
   // Stage 2: The final error state, with no retry button as requested
@@ -87,7 +87,7 @@ export const SignupForm = ({ onToggle }) => {
                 Could not connect to the server. Please refresh the page to try again.
             </Typography>
         </Stack>
-    );
+    )
   }
 
   // Stage 3: The final, ready-to-use form
@@ -110,6 +110,7 @@ export const SignupForm = ({ onToggle }) => {
             {...register("username")}
             error={!!errors.username}
             helperText={errors.username?.message}
+            disabled={isRegistering} 
           />
           <TextField
             label="Email Address"
@@ -118,6 +119,7 @@ export const SignupForm = ({ onToggle }) => {
             {...register("email")}
             error={!!errors.email}
             helperText={errors.email?.message}
+            disabled={isRegistering}
           />
           <TextField
             label="Password"
@@ -126,12 +128,14 @@ export const SignupForm = ({ onToggle }) => {
             {...register("password")}
             error={!!errors.password}
             helperText={errors.password?.message}
+            disabled={isRegistering} 
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
+                    disabled={isRegistering} 
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -162,9 +166,9 @@ export const SignupForm = ({ onToggle }) => {
             color="primary"
             size="large"
             sx={{ py: 1.5 }}
-            disabled={isRegistering || (password.length > 0 && !allValid)}
+            disabled={isRegistering || (password.length > 0 && !allValid)} 
           >
-            {isRegistering ? (
+            {isRegistering ? ( 
               <CircularProgress size={26} color="inherit" />
             ) : (
               "Create Account"
@@ -181,12 +185,19 @@ export const SignupForm = ({ onToggle }) => {
         Already have an account?{" "}
         <Link
           href="#"
-          onClick={onToggle}
-          sx={{ fontWeight: "bold", color: "primary.main" }}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            if (!isRegistering) onToggle(); 
+          }}
+          sx={{ 
+            fontWeight: "bold", 
+            color: isRegistering ? 'text.disabled' : 'primary.main',
+            pointerEvents: isRegistering ? 'none' : 'auto', 
+          }}
         >
           Log in
         </Link>
       </Typography>
     </Box>
-  );
-};
+  )
+}

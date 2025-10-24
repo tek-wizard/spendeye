@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Paper, Stack, IconButton, TextField, InputAdornment, Chip, Tooltip } from '@mui/material';
+import { Paper, Stack, IconButton, TextField, InputAdornment, Chip, Tooltip, CircularProgress } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -15,6 +15,7 @@ export const QuickEntryPanel = ({
   onCommit,
   onReset,
   entryType,
+  isCommitting,
 }) => {
   const noteInputRef = useRef(null);
 
@@ -32,9 +33,15 @@ export const QuickEntryPanel = ({
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && stage === 'note') {
+    if (e.key === 'Enter' && stage === 'note' && !isCommitting) {
       e.preventDefault();
-      onCommit();
+      onCommit(note); 
+    }
+  };
+
+  const handleSendClick = () => {
+    if (!isCommitting) {
+      onCommit(note);
     }
   };
 
@@ -55,9 +62,11 @@ export const QuickEntryPanel = ({
               size="small"
             />
             <Tooltip title="Start Over">
-              <IconButton onClick={onReset} size="small">
-                <ReplayIcon fontSize="inherit" />
-              </IconButton>
+              <span>
+                <IconButton onClick={onReset} size="small" disabled={isCommitting}> 
+                  <ReplayIcon fontSize="inherit" />
+                </IconButton>
+              </span>
             </Tooltip>
           </Stack>
         )}
@@ -77,6 +86,7 @@ export const QuickEntryPanel = ({
           }}
           inputProps={{ maxLength: 200 }}
           sx={{ flexGrow: 1 }}
+          disabled={isCommitting} 
         />
 
         {stage === 'amount' ? (
@@ -86,7 +96,7 @@ export const QuickEntryPanel = ({
                 <IconButton
                   color="success"
                   onClick={() => onAmountConfirm('Given')}
-                  disabled={!amount || Number(amount) === 0}
+                  disabled={!amount || Number(amount) === 0 || isCommitting} 
                 >
                   <ArrowUpwardIcon />
                 </IconButton>
@@ -97,7 +107,7 @@ export const QuickEntryPanel = ({
                 <IconButton
                   color="error"
                   onClick={() => onAmountConfirm('Received')}
-                  disabled={!amount || Number(amount) === 0}
+                  disabled={!amount || Number(amount) === 0 || isCommitting}
                 >
                   <ArrowDownwardIcon />
                 </IconButton>
@@ -106,9 +116,19 @@ export const QuickEntryPanel = ({
           </>
         ) : (
           <Tooltip title="Confirm Transaction">
-            <IconButton color="success" onClick={onCommit}>
-              <SendIcon />
-            </IconButton>
+            <span> 
+              <IconButton
+                color="success"
+                onClick={handleSendClick}
+                disabled={isCommitting} 
+              >
+                {isCommitting ? ( 
+                    <CircularProgress size={20} color="inherit" />
+                ) : (
+                    <SendIcon />
+                )}
+              </IconButton>
+            </span>
           </Tooltip>
         )}
       </Paper>

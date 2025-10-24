@@ -73,7 +73,7 @@ export const LedgerCreatorPanel = ({ summaryData, isLoading }) => {
         amount: parseFloat(formData.amount),
         type: formData.type,
         notes: formData.note.trim(),
-        date: formData.date,
+        date: formData.date.toISOString(),
     };
 
     createLedgerEntry(ledgerEntryData, {

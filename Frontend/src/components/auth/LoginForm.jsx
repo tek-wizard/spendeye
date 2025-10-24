@@ -31,7 +31,7 @@ export const LoginForm = ({ onToggle }) => {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
   });
@@ -60,6 +60,7 @@ export const LoginForm = ({ onToggle }) => {
                     {...register("email")}
                     error={!!errors.email}
                     helperText={errors.email?.message}
+                    disabled={isLoggingIn} // Disable while logging in
                 />
                 <TextField
                     label="Password"
@@ -68,12 +69,14 @@ export const LoginForm = ({ onToggle }) => {
                     {...register("password")}
                     error={!!errors.password}
                     helperText={errors.password?.message}
+                    disabled={isLoggingIn} // Disable while logging in
                     InputProps={{
                         endAdornment: (
                             <InputAdornment position="end">
                                 <IconButton
                                     onClick={() => setShowPassword(!showPassword)}
                                     edge="end"
+                                    disabled={isLoggingIn} // Disable icon while logging in
                                 >
                                     {showPassword ? <VisibilityOff /> : <Visibility />}
                                 </IconButton>
@@ -91,10 +94,15 @@ export const LoginForm = ({ onToggle }) => {
                     <Link
                         href="#"
                         variant="body2"
-                        onClick={(e) => { e.preventDefault(); setForgotModalOpen(true); }}
+                        onClick={(e) => { 
+                            e.preventDefault(); 
+                            if (!isLoggingIn) setForgotModalOpen(true); // Prevent opening while logging in
+                        }}
                         sx={{
                             fontWeight: "bold",
                             fontSize: { xs: "0.75rem", sm: "0.875rem" }, 
+                            color: isLoggingIn ? 'text.disabled' : 'primary.main', // Dim link if logging in
+                            pointerEvents: isLoggingIn ? 'none' : 'auto', // Disable clicks
                         }}
                     >
                         Forgot Password?
@@ -106,9 +114,9 @@ export const LoginForm = ({ onToggle }) => {
                     color="primary"
                     size="large"
                     sx={{ py: 1.5 }}
-                    disabled={isSubmitting}
+                    disabled={isLoggingIn}
                 >
-                    {isSubmitting ? (
+                    {isLoggingIn ? (
                         <CircularProgress size={26} color="inherit" />
                     ) : (
                         "Log in"
@@ -125,8 +133,15 @@ export const LoginForm = ({ onToggle }) => {
             Don't have an account?{" "}
             <Link
                 href="#"
-                onClick={onToggle}
-                sx={{ fontWeight: "bold", color: "primary.main" }}
+                onClick={(e) => { 
+                    e.preventDefault(); 
+                    if (!isLoggingIn) onToggle(); // Prevent toggling while logging in
+                }}
+                sx={{ 
+                    fontWeight: "bold", 
+                    color: isLoggingIn ? 'text.disabled' : 'primary.main', // Dim link if logging in
+                    pointerEvents: isLoggingIn ? 'none' : 'auto', // Disable clicks
+                }}
             >
                 Sign up
             </Link>
