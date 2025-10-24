@@ -24,6 +24,8 @@ export const SettleUpModal = ({ open, onClose, person }) => {
   const amountToSettle = Math.abs(netBalance)
 
   const handleSettle = () => {
+    if (amountToSettle === 0 || isCreating) return ;
+    
     const ledgerEntryData = {
       person: name,
       amount: amountToSettle,
@@ -64,7 +66,7 @@ export const SettleUpModal = ({ open, onClose, person }) => {
       {/* --- Content --- */}
       <DialogContent sx={{ p: 3, pt: 5 }}>
         <Stack spacing={3} alignItems="center" textAlign="center">
-          {/* --- Heading (Slightly Smaller) --- */}
+          {/* --- Heading --- */}
           <Typography
             variant="subtitle1"
             color="text.secondary"
@@ -118,6 +120,7 @@ export const SettleUpModal = ({ open, onClose, person }) => {
             inputProps={{ maxLength: 200 }}
             helperText={`${note.length} / 200`}
             fullWidth
+            disabled={isCreating}
           />
         </Stack>
       </DialogContent>
@@ -129,7 +132,7 @@ export const SettleUpModal = ({ open, onClose, person }) => {
           onClick={handleSettle}
           variant="contained"
           size="large"
-          disabled={isCreating}
+          disabled={isCreating || amountToSettle === 0}
           color="primary"
         >
           {isCreating ? (

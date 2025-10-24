@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react"
+import React, { useState, useCallback, useEffect } from "react" // THE FIX: Import useEffect
 import { Paper, Box, Button, Stack, CircularProgress,Typography } from "@mui/material"
 import { motion, AnimatePresence } from "framer-motion"
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"
@@ -34,6 +34,15 @@ export const LedgerCreatorPanel = ({ summaryData, isLoading }) => {
 
   const { createLedgerEntry, isCreating } = useCreateLedgerEntry();
 
+  useEffect(() => {
+    if (activeSlide === 'details' && !formData.date) { 
+      setFormData(prev => ({ ...prev, date: new Date() }));
+    } else if (activeSlide === 'metrics') { 
+        setFormData(prev => ({ ...prev, date: new Date() }));
+    }
+  }, [activeSlide, formData.date]);
+
+
   const navigateTo = (slide) => {
     setDirection(1)
     setActiveSlide(slide)
@@ -48,7 +57,7 @@ export const LedgerCreatorPanel = ({ summaryData, isLoading }) => {
   const handleCancel = useCallback(() => {
     setDirection(-1)
     setActiveSlide("metrics")
-    setTimeout(() => setFormData(initialFormState), 300)
+    setTimeout(() => setFormData({ ...initialFormState, date: new Date() }), 300) 
   }, [])
 
   const handleTypeSelect = (type) => {
@@ -73,12 +82,12 @@ export const LedgerCreatorPanel = ({ summaryData, isLoading }) => {
         amount: parseFloat(formData.amount),
         type: formData.type,
         notes: formData.note.trim(),
-        date: formData.date.toISOString(),
+        date: formData.date.toISOString(), 
     };
 
     createLedgerEntry(ledgerEntryData, {
         onSuccess: (data) => {
-            handleCancel();
+            handleCancel(); // This will now reset with a fresh date
         },
     });
   }
